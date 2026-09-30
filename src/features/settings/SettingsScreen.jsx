@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { getSettings, saveSettings, resetSettings } from '../../db/settings';
+import { resetToSeed } from '../../db/backup';
+import { confirmDialog, toast } from '../../lib/dialogs';
 import ProfileSection from './ProfileSection';
 import TermsSection from './TermsSection';
 import PrefsSection from './PrefsSection';
@@ -69,17 +71,17 @@ export default function SettingsScreen() {
 
         <AboutSection
           onReset={async () => {
-            if (
-              !confirm(
-                'Reset ALL app data (curriculum, timetable, lessons, settings) to the demo seed?'
-              )
-            )
-              return;
+            const ok = await confirmDialog({
+              title: 'Reset all app data?',
+              message: 'Curriculum, timetable, lessons and settings will be replaced by the demo data.',
+              confirmLabel: 'Reset everything',
+              danger: true,
+            });
+            if (!ok) return;
             await resetSettings();
-            const { resetToSeed } = await import('../../db/backup');
             await resetToSeed();
             await reload();
-            alert('Reset complete.');
+            toast.success('Reset complete.');
           }}
         />
       </main>

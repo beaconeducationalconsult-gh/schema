@@ -3,13 +3,13 @@ import ReactDOM from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 import App from './App';
 import './index.css';
-import { seedIfEmpty } from './db/seed';
+import { migrateExistingInstall } from './db/onboarding';
 import { initPWA } from './pwa/registerSW';
 import { requestPersistentStorage } from './pwa/persist';
 
 initPWA();
 
-seedIfEmpty().finally(async () => {
+migrateExistingInstall().catch(() => {}).finally(async () => {
   await requestPersistentStorage().catch(() => {});
   ReactDOM.createRoot(document.getElementById('root')).render(
     <React.StrictMode>

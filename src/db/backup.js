@@ -1,4 +1,6 @@
 import { db } from './schema';
+import { seedIfEmpty } from './seed';
+import { markOnboarded } from './settings';
 
 const BACKUP_TABLES = [
   'subjects', 'strands', 'subStrands', 'standards',
@@ -48,6 +50,11 @@ export function validateBackup(obj) {
   if (!obj.data || typeof obj.data !== 'object') {
     throw new Error('Backup is missing its data section.');
   }
+  if (obj.meta.schemaVersion > db.verno) {
+    throw new Error(
+      'This backup was made by a newer version of the app. Update the app and try again.'
+    );
+  }
   const missing = BACKUP_TABLES.filter(t => !Array.isArray(obj.data[t]));
   if (missing.length) {
     throw new Error(`Backup is missing tables: ${missing.join(', ')}`);
@@ -55,38 +62,95 @@ export function validateBackup(obj) {
   return true;
 }
 
+// Foreign keys per table, used to re-link rows when merging (ids differ between devices).
+// Order matters: parents are inserted before children.
+const MERGE_ORDER = [
+  { table: 'subjects',   fks: {} },
+  { table: 'strands',    fks: { subjectId: 'subjects' } },
+  { table: 'subStrands', fks: { strandId: 'strands' } },
+  { table: 'standards',  fks: { subStrandId: 'subStrands' } },
+  { table: 'timetable',  fks: { subjectId: 'subjects' } },
+  { table: 'lessons',    fks: { standardId: 'standards', timetableId: 'timetable' } },
+  { table: 'activities', fks: { lessonId: 'lessons' } },
+  { table: 'notes',      fks: { lessonId: 'lessons', standardId: 'standards' } },
+  { table: 'resources',  fks: { standardId: 'standards' } },
+];
+
+/**
+ * Merge: every incoming row is added under a fresh auto-increment id and its
+ * foreign keys are rewritten to the new ids, so nothing collides with or
+ * silently overwrites existing data. Existing settings win; the per-subject
+ * "current standard" pointers are carried over for subjects that have none.
+ */
+async function mergeBackup(data) {
+  const idMap = {};
+  const imported = {};
+
+  for (const { table, fks } of MERGE_ORDER) {
+    const map = (idMap[table] = new Map());
+    imported[table] = 0;
+    for (const row of data[table] || []) {
+      const { id: oldId, ...rest } = row;
+      for (const [fk, parent] of Object.entries(fks)) {
+        if (rest[fk] == null) continue;
+        const mapped = idMap[parent].get(rest[fk]);
+        // Orphaned reference in the backup: drop the link rather than point at a wrong row.
+        rest[fk] = mapped ?? null;
+      }
+      const newId = await db[table].add(rest);
+      if (oldId != null) map.set(oldId, newId);
+      imported[table]++;
+    }
+  }
+
+  // Settings
+  imported.settings = 0;
+  const pointerKey = 'currentStandardBySubject';
+  for (const row of data.settings || []) {
+    if (row.key === LAST_EXPORT_KEY) continue;
+    if (row.key === pointerKey) {
+      const current = (await db.settings.get(pointerKey))?.value || {};
+      const merged = { ...current };
+      for (const [oldSubject, oldStd] of Object.entries(row.value || {})) {
+        const subj = idMap.subjects.get(Number(oldSubject));
+        const std = idMap.standards.get(oldStd);
+        if (subj != null && std != null && merged[subj] == null) merged[subj] = std;
+      }
+      await db.settings.put({ key: pointerKey, value: merged });
+      imported.settings++;
+    } else if (!(await db.settings.get(row.key))) {
+      await db.settings.put(row);
+      imported.settings++;
+    }
+  }
+  return imported;
+}
+
 export async function importBackup(obj, { mode = 'replace' } = {}) {
   validateBackup(obj);
 
   const tables = BACKUP_TABLES.map(t => db[t]);
+  let imported;
 
   await db.transaction('rw', tables, async () => {
-    if (mode === 'replace') {
-      for (const t of BACKUP_TABLES) await db[t].clear();
+    if (mode === 'merge') {
+      imported = await mergeBackup(obj.data);
+      return;
     }
-
+    for (const t of BACKUP_TABLES) await db[t].clear();
     for (const t of BACKUP_TABLES) {
       const rows = obj.data[t] || [];
-      if (!rows.length) continue;
-
-      if (mode === 'merge') {
-        for (const row of rows) {
-          const pk = t === 'settings' ? row.key : row.id;
-          if (pk != null && await db[t].get(pk)) continue;
-          await db[t].put(row);
-        }
-      } else {
-        await db[t].bulkPut(rows);
-      }
+      if (rows.length) await db[t].bulkPut(rows);
     }
+    imported = Object.fromEntries(
+      BACKUP_TABLES.map(t => [t, (obj.data[t] || []).length])
+    );
   });
 
-  return {
-    imported: Object.fromEntries(
-      BACKUP_TABLES.map(t => [t, (obj.data[t] || []).length])
-    ),
-    mode,
-  };
+  // A restored backup means the app is already set up (older backups have no flag).
+  await markOnboarded();
+
+  return { imported, mode };
 }
 
 export async function resetToSeed() {
@@ -94,8 +158,8 @@ export async function resetToSeed() {
   await db.transaction('rw', tables, async () => {
     for (const t of BACKUP_TABLES) await db[t].clear();
   });
-  const { seedIfEmpty } = await import('./seed');
   await seedIfEmpty();
+  await markOnboarded();
 }
 
 export async function databaseSummary() {

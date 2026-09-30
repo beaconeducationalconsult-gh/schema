@@ -6,6 +6,7 @@ import {
   notes as noteRepo,
   standards as standardRepo,
 } from '../../db/helpers';
+import { db } from '../../db/schema';
 import ActivityBlock from './ActivityBlock';
 import ActivityPicker from './ActivityPicker';
 import GuidedMode from './GuidedMode';
@@ -50,7 +51,7 @@ export default function LessonScreen() {
 
   useEffect(() => {
     (async () => {
-      const list = await import('../../db/schema').then(m => m.db.standards.toArray());
+      const list = await db.standards.toArray();
       const enriched = [];
       for (const s of list) {
         const ctx = await standardRepo.withContext(s.id);
@@ -576,7 +577,6 @@ function StandardQuickEdit({ standard, onClose, onSaved }) {
   const [content, setContent] = useState(standard.contentStandard || '');
   const [indicator, setIndicator] = useState(standard.indicator || '');
   const save = async () => {
-    const { db } = await import('../../db/schema');
     await db.standards.update(standard.id, {
       contentStandard: content.trim(),
       indicator: indicator.trim(),

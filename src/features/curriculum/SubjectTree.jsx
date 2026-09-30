@@ -7,6 +7,7 @@ import {
   deleteSubStrand,
   deleteStandard,
 } from '../../db/curriculum';
+import { confirmDialog } from '../../lib/dialogs';
 import StandardEditor from './StandardEditor';
 import InlineAdd from './InlineAdd';
 import ResourceManagerModal from '../../components/ResourceManagerModal';
@@ -134,7 +135,7 @@ export default function SubjectTree({ subject, currentStandardId, onSetCurrent, 
                               onEdit={() => setEditing({ standard: std, subStrandId: sub.id })}
                               onManageMedia={() => setMediaStandard(std)}
                               onDelete={async () => {
-                                if (confirm('Delete this standard?')) {
+                                if (await confirmDialog({ title: 'Delete this standard?', confirmLabel: 'Delete', danger: true })) {
                                   await deleteStandard(std.id);
                                   reload();
                                   onChanged?.();
@@ -154,7 +155,7 @@ export default function SubjectTree({ subject, currentStandardId, onSetCurrent, 
                             />
                             <button
                               onClick={async () => {
-                                if (confirm('Delete sub-strand and all standards under it?')) {
+                                if (await confirmDialog({ title: 'Delete sub-strand?', message: 'All standards under it will be deleted too.', confirmLabel: 'Delete', danger: true })) {
                                   await deleteSubStrand(sub.id);
                                   reload();
                                   onChanged?.();
@@ -179,7 +180,7 @@ export default function SubjectTree({ subject, currentStandardId, onSetCurrent, 
                   />
                   <button
                     onClick={async () => {
-                      if (confirm('Delete strand and all children?')) {
+                      if (await confirmDialog({ title: 'Delete strand?', message: 'All sub-strands and standards under it will be deleted too.', confirmLabel: 'Delete', danger: true })) {
                         await deleteStrand(strand.id);
                         reload();
                         onChanged?.();

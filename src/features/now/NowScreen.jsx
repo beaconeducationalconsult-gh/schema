@@ -13,6 +13,7 @@ import {
 import { ensureLessonFor, resolveStandardForSubject } from '../../db/schedule';
 import { daysSinceExport } from '../../db/backup';
 import { ACTIVITY_TYPES, db } from '../../db/schema';
+import { toast } from '../../lib/dialogs';
 import ResourceGallery from '../../components/ResourceGallery';
 import ResourceManagerModal from '../../components/ResourceManagerModal';
 import RoutineTemplateModal from '../../components/RoutineTemplateModal';
@@ -637,7 +638,7 @@ function ActivityPromptBar({ lessonId, standard, onAdded, onOpenTemplates }) {
   };
 
   const save = async () => {
-    if (!lessonId) return alert('No lesson yet for this slot.');
+    if (!lessonId) return toast.error('No lesson yet for this slot.');
     const meta = ACTIVITY_META[openType];
     const payload = {
       lessonId,
@@ -984,18 +985,27 @@ function ContextSkeleton() {
 function EmptyDay() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-slate-50 px-6 pb-20">
-      <div className="text-center">
-        <div className="text-5xl mb-3">🌴</div>
-        <h2 className="text-xl font-semibold text-slate-800">No classes scheduled</h2>
+      <div className="text-center max-w-sm">
+        <div className="text-5xl mb-3">🗓️</div>
+        <h2 className="text-xl font-semibold text-slate-800">Let's set up your week</h2>
         <p className="text-sm text-slate-500 mt-1">
-          Enjoy the break — or add slots in the Week Schedule tab.
+          Add your timetable slots and this screen will always show what you are teaching
+          right now — and what's next.
         </p>
-        <Link
-          to="/schedule"
-          className="inline-block mt-4 px-4 py-2 rounded-lg bg-slate-900 text-white text-sm"
-        >
-          Manage Timetable
-        </Link>
+        <div className="flex flex-col sm:flex-row gap-2 justify-center mt-5">
+          <Link
+            to="/schedule"
+            className="px-4 py-2.5 rounded-xl bg-primary text-on-primary text-sm font-medium"
+          >
+            Build my timetable
+          </Link>
+          <Link
+            to="/curriculum"
+            className="px-4 py-2.5 rounded-xl border border-slate-300 text-slate-700 text-sm font-medium"
+          >
+            Add curriculum
+          </Link>
+        </div>
       </div>
     </div>
   );

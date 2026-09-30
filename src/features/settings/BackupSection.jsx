@@ -5,6 +5,7 @@ import {
   importBackup,
   markExported,
 } from '../../db/backup';
+import { toast, confirmDialog } from '../../lib/dialogs';
 import { downloadFile } from '../../db/history';
 import { toDateKey } from '../../db/helpers';
 
@@ -34,10 +35,15 @@ export default function BackupSection({ onImported }) {
 
   const doImport = async (mode) => {
     const file = fileRef.current?.files?.[0];
-    if (!file) return alert('Choose a backup .json file first.');
+    if (!file) return toast.error('Choose a backup .json file first.');
     if (mode === 'replace') {
-      if (!confirm('Replace ALL current data with the backup? This cannot be undone.'))
-        return;
+      const ok = await confirmDialog({
+        title: 'Replace all current data?',
+        message: 'Everything on this device will be overwritten by the backup. This cannot be undone.',
+        confirmLabel: 'Replace everything',
+        danger: true,
+      });
+      if (!ok) return;
     }
     setBusy(true);
     try {

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { activityRepo } from '../../db/helpers';
+import { confirmDialog } from '../../lib/dialogs';
 import { ACTIVITY_META } from './LessonScreen';
 
 export default function ActivityBlock({ activity, index, onMoveUp, onMoveDown, onReload }) {
@@ -28,7 +29,7 @@ export default function ActivityBlock({ activity, index, onMoveUp, onMoveDown, o
   };
 
   const remove = async () => {
-    if (!confirm('Delete this activity?')) return;
+    if (!(await confirmDialog({ title: 'Delete this activity?', confirmLabel: 'Delete', danger: true }))) return;
     await activityRepo.remove(activity.id);
     onReload?.();
   };
