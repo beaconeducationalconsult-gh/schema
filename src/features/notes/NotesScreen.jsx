@@ -6,6 +6,7 @@ import {
   standards as standardRepo,
 } from '../../db/helpers';
 import { db } from '../../db/schema';
+import { confirmDialog } from '../../lib/dialogs';
 
 const PRESET_TAGS = ['prep', 'remedial', 'insight', 'homework', 'absent', 'assessment'];
 
@@ -119,7 +120,7 @@ export default function NotesScreen() {
   };
 
   const deleteNote = async (id) => {
-    if (!confirm('Delete this note?')) return;
+    if (!(await confirmDialog({ title: 'Delete this note?', confirmLabel: 'Delete', danger: true }))) return;
     await noteRepo.remove(id);
     await reload();
   };

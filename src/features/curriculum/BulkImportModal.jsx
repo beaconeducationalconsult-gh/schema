@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { toast } from '../../lib/dialogs';
 import { bulkImportCurriculum } from '../../db/curriculum';
 
 const SAMPLE_CSV = `Strand,Sub-strand,Content Standard,Indicator,Exemplars
@@ -14,7 +15,7 @@ export default function BulkImportModal({ subject, onClose, onImported }) {
     setBusy(true);
     try {
       const res = await bulkImportCurriculum(subject.id, text);
-      alert(
+      toast.success(
         `Imported ${res.standardsCreated} standards (${res.strandsCreated} new strands, ${res.subStrandsCreated} new sub-strands).`
       );
       onImported?.();

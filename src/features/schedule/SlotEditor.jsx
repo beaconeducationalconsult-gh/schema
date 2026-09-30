@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { confirmDialog } from '../../lib/dialogs';
 import { timetable as timetableRepo } from '../../db/helpers';
 
 const DAYS = [
@@ -39,7 +40,7 @@ export default function SlotEditor({ slot, subjects, onClose, onSaved }) {
 
   const remove = async () => {
     if (!slot) return;
-    if (!confirm('Delete this timetable slot?')) return;
+    if (!(await confirmDialog({ title: 'Delete this timetable slot?', confirmLabel: 'Delete', danger: true }))) return;
     await timetableRepo.remove(slot.id);
     onSaved?.();
   };

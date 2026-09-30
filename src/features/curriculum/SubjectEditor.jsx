@@ -1,5 +1,8 @@
 import React, { useState } from 'react';
 import { subjects as subjectRepo } from '../../db/helpers';
+import { confirmDialog } from '../../lib/dialogs';
+import { db } from '../../db/schema';
+import { deleteStrand } from '../../db/curriculum';
 
 const COLORS = ['#2563eb','#dc2626','#16a34a','#9333ea','#ea580c','#0891b2','#4f46e5','#be185d'];
 const ICONS  = ['sigma','book','flask','globe','music','palette','code','leaf'];
@@ -23,9 +26,13 @@ export default function SubjectEditor({ subject, onClose, onSaved }) {
 
   const remove = async () => {
     if (!subject) return;
-    if (!confirm(`Delete "${subject.name}" and all its strands?`)) return;
-    const { db } = await import('../../db/schema');
-    const { deleteStrand } = await import('../../db/curriculum');
+    const ok = await confirmDialog({
+      title: `Delete "${subject.name}"?`,
+      message: 'All its strands, sub-strands and standards will be deleted too.',
+      confirmLabel: 'Delete',
+      danger: true,
+    });
+    if (!ok) return;
     const strands = await db.strands.where('subjectId').equals(subject.id).toArray();
     for (const s of strands) await deleteStrand(s.id);
     await subjectRepo.remove(subject.id);

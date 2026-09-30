@@ -13,6 +13,7 @@ import {
 import { ensureLessonFor, resolveStandardForSubject } from '../../db/schedule';
 import { daysSinceExport } from '../../db/backup';
 import { ACTIVITY_TYPES, db } from '../../db/schema';
+import { toast } from '../../lib/dialogs';
 import ResourceGallery from '../../components/ResourceGallery';
 import ResourceManagerModal from '../../components/ResourceManagerModal';
 import RoutineTemplateModal from '../../components/RoutineTemplateModal';
@@ -637,7 +638,7 @@ function ActivityPromptBar({ lessonId, standard, onAdded, onOpenTemplates }) {
   };
 
   const save = async () => {
-    if (!lessonId) return alert('No lesson yet for this slot.');
+    if (!lessonId) return toast.error('No lesson yet for this slot.');
     const meta = ACTIVITY_META[openType];
     const payload = {
       lessonId,
