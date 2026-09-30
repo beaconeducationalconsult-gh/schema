@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { ACTIVITY_META } from '../lesson/LessonScreen';
+import { ACTIVITY_META } from '../../lib/activityMeta';
 
 const STATUS_STYLES = {
   planned:     'bg-slate-100 text-slate-600',

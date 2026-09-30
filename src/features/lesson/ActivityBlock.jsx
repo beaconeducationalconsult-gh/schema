@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { activityRepo } from '../../db/helpers';
 import { confirmDialog } from '../../lib/dialogs';
-import { ACTIVITY_META } from './LessonScreen';
+import { ACTIVITY_META } from '../../lib/activityMeta';
 
 export default function ActivityBlock({ activity, index, onMoveUp, onMoveDown }) {
   const meta = ACTIVITY_META[activity.type] || ACTIVITY_META.exercise;

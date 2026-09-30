@@ -23,7 +23,7 @@ const inputCls =
   'w-full border border-slate-300 bg-surface rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-slate-400';
 
 export default function OnboardingScreen() {
-  const defaults = useRef(getDefaultSettings()).current;
+  const [defaults] = useState(getDefaultSettings);
   const fileRef = useRef(null);
 
   const [step, setStep] = useState(0);

@@ -6,11 +6,13 @@ It matches your weekly timetable to your curriculum (NaCCA-style strands, sub-st
 
 ## Features
 
-- **Now** – current timetable slot, the active standard, and quick-add lesson activities
+- **Now** – current timetable slot with a **countdown ring** (time left in class, then the last 15 minutes before the next one), the active standard, and quick-add lesson activities
 - **Schedule** – weekly timetable (grid and day list) with a slot editor
 - **Curriculum** – Subject → Strand → Sub-strand → Standard tree, with bulk text import
 - **Lesson** – activity blocks (exercise, correction, image observation, video, reading, discussion, assignment), one-tap routine templates, guided mode with timers, and a print view
 - **Notes**, **History** (filters, stats, CSV export) and **Settings** (profile, terms, preferences, backup/restore, storage)
+- **Class reminders** – a toast, chime and optional system notification a set number of minutes before each class
+- Bottom nav with four everyday tabs and a **More** menu (History, Settings, projector toggle)
 - Installable PWA with offline support and update prompts
 
 ## Tech stack
@@ -36,6 +38,11 @@ On first launch a short **onboarding wizard** asks for your name, school, class,
 ### Live data
 Screens read IndexedDB through Dexie live queries (`useLiveQuery`), so anything written from another screen, tab or a backup import shows up without a reload. Writes never happen inside a live-query function; creating "today's lesson" for the Now screen happens in an effect (`src/db/now.js`).
 
+### Class reminders
+**Settings → Preferences → Reminder before class** sets the lead time in minutes (default 5; `0` switches reminders off). `ClassReminders` (mounted in `App`) checks today's slots every 10 s and shows a toast with an *Open* action plus a chime when the window is focused; if the window is hidden or unfocused it sends a system notification instead, once you press **Enable** under *Notifications* (per device). Each reminder fires once per class per day (tracked in `localStorage` key `tc-reminded`, shared between tabs). The pure logic lives in `src/lib/reminders.js`.
+
+Limitation: there is no backend or push service, so reminders only fire while the app is open (a tab or the installed PWA window, including in the background). They cannot wake a fully closed app.
+
 ### Theming (dark and projector mode)
 **Settings → Display** offers *System / Light / Dark* and a *Projector mode* switch (larger type, stronger contrast; also a button in guided lesson mode). Both are stored per device in `localStorage` (`tc-theme`, `tc-projector`), applied before first paint by an inline script in `index.html`, and are not part of backups.
 
@@ -50,10 +57,13 @@ Rather than adding `dark:` variants to every class, dark mode **re-maps the Tail
 ```
 src/
   db/          Dexie schema, repositories, seed data, backup, history queries
-  features/    Screens: now, schedule, curriculum, lesson, notes, history, settings
-  components/  Shared modals, resource gallery, navigation
-  lib/         Routine templates, classroom SVG media, week/date helpers
-  hooks/       useNow
+  features/    One folder per screen (now, schedule, curriculum, lesson, notes, history, settings,
+               onboarding). Screens are thin orchestrators; each card/panel is its own file, e.g.
+               now/{StatusBanner,ClassCard,CurriculumCard,ActivityPromptBar,…}.jsx and
+               lesson/{LessonToolbar,LessonHeader,StandardCard,TeachingPlan,NotesPanel,…}.jsx
+  components/  Shared modals, resource gallery, navigation, dialogs, class reminders
+  lib/         activityMeta, countdown, reminders, theme, week/date helpers, routine templates, media
+  hooks/       useNow, useWakeLock
   pwa/         Service-worker registration, banners, persistent storage
 tests/         Vitest specs
 public/        Icons, offline page, robots.txt

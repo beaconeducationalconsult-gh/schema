@@ -1,8 +1,13 @@
 import React, { useEffect, useState } from 'react';
 
 export default function PwaBanners() {
-  const [needRefresh, setNeedRefresh] = useState(false);
-  const [offlineReady, setOfflineReady] = useState(false);
+  // The service-worker callbacks may have fired before this component mounted, so
+  // start from the flags they left on `window` (initial state, not an effect).
+  const offlineDismissed = () => sessionStorage.getItem('pwa-offline-ready-dismissed') === '1';
+  const [needRefresh, setNeedRefresh] = useState(() => !!window.__pwaNeedRefresh);
+  const [offlineReady, setOfflineReady] = useState(
+    () => !!window.__pwaOfflineReady && !offlineDismissed()
+  );
   const [isOffline, setIsOffline] = useState(!navigator.onLine);
   const [installEvent, setInstallEvent] = useState(null);
 
@@ -15,18 +20,12 @@ export default function PwaBanners() {
   useEffect(() => {
     const onRefresh = () => setNeedRefresh(true);
     const onReady = () => {
-      if (sessionStorage.getItem('pwa-offline-ready-dismissed') !== '1') {
-        setOfflineReady(true);
-      }
+      if (!offlineDismissed()) setOfflineReady(true);
     };
 
     window.addEventListener('pwa:need-refresh', onRefresh);
     window.addEventListener('pwa:offline-ready', onReady);
 
-    if (window.__pwaNeedRefresh) setNeedRefresh(true);
-    if (window.__pwaOfflineReady && sessionStorage.getItem('pwa-offline-ready-dismissed') !== '1') {
-      setOfflineReady(true);
-    }
 
     return () => {
       window.removeEventListener('pwa:need-refresh', onRefresh);

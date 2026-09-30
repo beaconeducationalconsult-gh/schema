@@ -6,6 +6,7 @@ import DialogHost from './components/DialogHost';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { isOnboarded } from './db/settings';
 import OnboardingScreen from './features/onboarding/OnboardingScreen';
+import ClassReminders from './components/ClassReminders';
 import PwaBanners from './pwa/PwaBanners';
 
 // The home screen loads eagerly; everything else is split into its own chunk.
@@ -57,6 +58,7 @@ export default function App() {
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Suspense>
+      <ClassReminders />
       <PwaBanners />
       <DialogHost />
       <AppNav />

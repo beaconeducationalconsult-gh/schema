@@ -20,24 +20,24 @@ export default function WeekScreen() {
   const [search, setSearch] = useSearchParams();
   const navigate = useNavigate();
 
-  const initial = (() => {
+  const [weekStart, setWeekStart] = useState(() => {
     const param = search.get('week');
-    return param ? startOfWeek(new Date(param + 'T00:00:00')) : startOfWeek(new Date());
-  })();
-
-  const [weekStart, setWeekStart] = useState(initial);
+    return startOfWeek(param ? new Date(param + 'T00:00:00') : new Date());
+  });
   const [includeWeekend, setIncludeWeekend] = useState(
     () => localStorage.getItem(STORAGE_KEY) === '1'
   );
   const [view, setView] = useState(() => {
     return window.matchMedia('(min-width: 768px)').matches ? 'grid' : 'list';
   });
-  const [todayKey, setTodayKey] = useState(toDateKey(new Date()));
+  // Ticks every minute so "today", the now-line and "This week" stay right on a screen left open.
+  const [now, setNow] = useState(() => new Date());
+  const todayKey = toDateKey(now);
   const [editMode, setEditMode] = useState(false);
   const [editingSlot, setEditingSlot] = useState(null);
 
   useEffect(() => {
-    const id = setInterval(() => setTodayKey(toDateKey(new Date())), 60_000);
+    const id = setInterval(() => setNow(new Date()), 60_000);
     return () => clearInterval(id);
   }, []);
 
@@ -46,8 +46,9 @@ export default function WeekScreen() {
   }, [includeWeekend]);
 
   useEffect(() => {
-    setSearch({ week: toDateKey(weekStart) }, { replace: true });
-  }, [weekStart]);
+    const key = toDateKey(weekStart);
+    if (search.get('week') !== key) setSearch({ week: key }, { replace: true });
+  }, [weekStart, search, setSearch]);
 
   // Live: editing a slot, completing a lesson or restoring a backup refreshes the grid.
   const weekKey = toDateKey(weekStart);
@@ -58,7 +59,7 @@ export default function WeekScreen() {
   const subjectsList = useLiveQuery(() => subjectRepo.all(), [], EMPTY);
   const loading = data === undefined;
 
-  const isThisWeek = isSameWeek(weekStart, new Date());
+  const isThisWeek = isSameWeek(weekStart, now);
 
   const openSlot = async (slot, date) => {
     if (editMode) {
@@ -173,6 +174,7 @@ export default function WeekScreen() {
         ) : view === 'grid' ? (
           <WeekGrid
             data={data}
+            now={now}
             todayKey={todayKey}
             editMode={editMode}
             onOpenSlot={openSlot}
@@ -180,6 +182,7 @@ export default function WeekScreen() {
         ) : (
           <DayList
             data={data}
+            now={now}
             todayKey={todayKey}
             editMode={editMode}
             onOpenSlot={openSlot}

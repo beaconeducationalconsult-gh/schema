@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { activityRepo } from '../../db/helpers';
 import { ACTIVITY_TYPES } from '../../db/schema';
-import { ACTIVITY_META } from './LessonScreen';
+import { ACTIVITY_META } from '../../lib/activityMeta';
 
 export default function ActivityPicker({ lessonId, onClose, onAdded }) {
   const [type, setType] = useState(null);

@@ -2,9 +2,8 @@ import React from 'react';
 import { toDateKey } from '../../db/helpers';
 import { hhmmToMin } from '../../lib/week';
 
-export default function DayList({ data, todayKey, editMode, onOpenSlot }) {
+export default function DayList({ data, now, todayKey, editMode, onOpenSlot }) {
   const { days, dayNumbers, slotsByDay, subjects, lessons } = data;
-  const now = new Date();
   const nowMin = now.getHours() * 60 + now.getMinutes();
 
   return (

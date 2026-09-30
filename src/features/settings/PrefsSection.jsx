@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { notificationStatus, requestNotificationPermission } from '../../lib/reminders';
 
 export default function PrefsSection({ prefs, onChange }) {
   const set = (patch) => onChange({ ...prefs, ...patch });
@@ -43,7 +44,10 @@ export default function PrefsSection({ prefs, onChange }) {
         </div>
       </Row>
 
-      <Row label="Reminder before class">
+      <Row
+        label="Reminder before class"
+        hint="Toast + chime while the app is open. 0 turns reminders off."
+      >
         <div className="flex items-center gap-1">
           <input
             type="number"
@@ -56,7 +60,37 @@ export default function PrefsSection({ prefs, onChange }) {
           <span className="text-xs text-slate-500">min</span>
         </div>
       </Row>
+
+      <NotificationRow />
     </section>
+  );
+}
+
+/** Optional system notifications for the class reminder (per device, asked on click). */
+function NotificationRow() {
+  const [status, setStatus] = useState(notificationStatus);
+  if (status === 'unsupported') return null;
+
+  const hints = {
+    default: 'Also get a system notification when the app is in the background.',
+    granted: 'On — reminders also appear as system notifications.',
+    denied: 'Blocked. Allow notifications for this site in your browser settings.',
+  };
+  return (
+    <Row label="Notifications" hint={hints[status]}>
+      {status === 'granted' ? (
+        <span className="text-xs font-semibold text-emerald-700">On</span>
+      ) : (
+        <button
+          type="button"
+          disabled={status === 'denied'}
+          onClick={async () => setStatus(await requestNotificationPermission())}
+          className="text-xs px-3 py-1.5 rounded-lg border border-slate-300 text-slate-700 hover:bg-slate-100 disabled:opacity-40"
+        >
+          Enable
+        </button>
+      )}
+    </Row>
   );
 }
 

@@ -11,10 +11,16 @@
       {
         "allowConstantExport": true
       }
-    ]
+    ],
+    "no-undef": "error"
   },
   "ignorePatterns": [
     "dist",
     "dev-dist"
-  ]
+  ],
+  "env": {
+    "browser": true,
+    "node": true,
+    "es2022": true
+  }
 }

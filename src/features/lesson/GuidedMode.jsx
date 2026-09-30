@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { activityRepo } from '../../db/helpers';
-import { ACTIVITY_META } from './LessonScreen';
+import { ACTIVITY_META } from '../../lib/activityMeta';
 import { Presentation } from 'lucide-react';
 import { useDisplay, setProjector } from '../../lib/theme';
 import { useWakeLock } from '../../hooks/useWakeLock';
@@ -24,12 +24,14 @@ export default function GuidedMode({ data, onExit }) {
 
   const current = activities[index];
 
-  // Reset timer whenever the step changes
-  useEffect(() => {
-    if (!current) return;
+  // Reset the timer whenever the step changes. Adjusting state while rendering
+  // (instead of in an effect) avoids painting one frame with the old step's time.
+  const [timerStepId, setTimerStepId] = useState(null);
+  if (current && timerStepId !== current.id) {
+    setTimerStepId(current.id);
     setSecondsLeft((current.duration || 0) * 60);
     setRunning(false);
-  }, [current?.id]);
+  }
 
   // Countdown
   useEffect(() => {

@@ -1,5 +1,5 @@
 import React from 'react';
-import { ACTIVITY_META } from '../lesson/LessonScreen';
+import { ACTIVITY_META } from '../../lib/activityMeta';
 
 export default function StatsBar({ stats }) {
   const topTypes = Object.entries(stats.byActivityType)
