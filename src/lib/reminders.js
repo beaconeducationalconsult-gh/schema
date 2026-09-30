@@ -68,7 +68,7 @@ export async function requestNotificationPermission() {
 /** Fire a system notification if permission was granted. Returns whether one was shown. */
 export async function showSystemNotification(title, body, tag) {
   if (notificationStatus() !== 'granted') return false;
-  const options = { body, tag, icon: '/icons/icon-192.png' };
+  const options = { body, tag, icon: '/icons/icon-192.png', data: { url: '/' } };
   try {
     // Android Chrome only allows notifications through the service worker.
     const reg = await navigator.serviceWorker?.getRegistration?.();
@@ -76,7 +76,11 @@ export async function showSystemNotification(title, body, tag) {
       await reg.showNotification(title, options);
       return true;
     }
-    new Notification(title, options);
+    const n = new Notification(title, options);
+    n.onclick = () => {
+      window.focus();
+      n.close();
+    };
     return true;
   } catch {
     return false;

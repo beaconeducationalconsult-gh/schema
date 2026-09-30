@@ -9,6 +9,21 @@ import { toast, confirmDialog } from '../../lib/dialogs';
 import { downloadFile } from '../../db/history';
 import { toDateKey } from '../../db/helpers';
 
+const sum = (o) => Object.values(o || {}).reduce((a, n) => a + n, 0);
+
+/** "Merged: 12 new, 30 already here (subjects:1 · lessons:11)" / "Restored: subjects:3 · …" */
+function describeImport({ mode, imported, skipped }) {
+  const detail = Object.entries(imported)
+    .filter(([, n]) => n > 0)
+    .map(([t, n]) => `${t}:${n}`)
+    .join(' · ');
+  if (mode !== 'merge') return `Restored: ${detail || 'nothing'}`;
+  const added = sum(imported);
+  const already = sum(skipped);
+  if (added === 0) return `Nothing new — everything in this backup is already here (${already} items).`;
+  return `Merged: ${added} new, ${already} already here${detail ? ` (${detail})` : ''}`;
+}
+
 export default function BackupSection({ onImported }) {
   const fileRef = useRef(null);
   const [busy, setBusy] = useState(false);
@@ -50,12 +65,7 @@ export default function BackupSection({ onImported }) {
       const text = await file.text();
       const obj = JSON.parse(text);
       const result = await importBackup(obj, { mode });
-      setLastMsg({
-        tone: 'ok',
-        text: `Imported (${mode}): ${Object.entries(result.imported)
-          .map(([t, n]) => `${t}:${n}`)
-          .join(' · ')}`,
-      });
+      setLastMsg({ tone: 'ok', text: describeImport(result) });
       onImported?.();
     } catch (e) {
       setLastMsg({ tone: 'err', text: e.message });

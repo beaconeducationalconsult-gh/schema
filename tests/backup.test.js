@@ -92,4 +92,68 @@ describe('backup', () => {
     expect(pointers[mine.subjectId]).toBe(mine.standardId);
     expect(pointers[a.id]).toBe(std.id);
   });
+
+  it('merging the same backup again adds nothing', async () => {
+    await seedChain('A');
+    const snap = await exportBackup();
+    // (settings excluded: importing always marks the app as onboarded)
+    const DATA = TABLES.filter((t) => t !== 'settings');
+    const before = Object.fromEntries(await Promise.all(DATA.map(async (t) => [t, await db[t].count()])));
+
+    const first = await importBackup(snap, { mode: 'merge' });
+    const second = await importBackup(snap, { mode: 'merge' });
+
+    for (const t of DATA) expect(await db[t].count(), t).toBe(before[t]);
+    expect(Object.values(first.imported).reduce((a, b) => a + b, 0)).toBe(0);
+    expect(second.skipped.subjects).toBe(1);
+    expect(second.skipped.activities).toBe(1);
+    expect(second.skipped.lessons).toBe(1);
+    // the "current standard" pointer is not rewritten either
+    const pointers = (await db.settings.get('currentStandardBySubject')).value;
+    expect(Object.keys(pointers)).toHaveLength(1);
+  });
+
+  it('merges only what is new into data that already overlaps', async () => {
+    const { subjectId } = await seedChain('A');
+    const snap = await exportBackup();
+
+    // The backup knows more than the device: a second activity, a note and a new strand.
+    const lesson = snap.data.lessons[0];
+    snap.data.activities.push({ id: 999, lessonId: lesson.id, type: 'video', title: 'New video', order: 1 });
+    snap.data.notes.push({ id: 998, lessonId: lesson.id, standardId: lesson.standardId, body: 'fresh', tags: [], createdAt: 2 });
+    snap.data.strands.push({ id: 997, subjectId, name: 'A strand 2', order: 1 });
+
+    const res = await importBackup(snap, { mode: 'merge' });
+
+    expect(res.imported).toMatchObject({ subjects: 0, lessons: 0, activities: 1, notes: 1, strands: 1 });
+    expect(await db.subjects.count()).toBe(1);
+    expect(await db.lessons.count()).toBe(1);
+    // …and the new children hang off the rows that were already here
+    const existing = await db.lessons.toArray();
+    const acts = await db.activities.where('lessonId').equals(existing[0].id).toArray();
+    expect(acts.map((a) => a.title).sort()).toEqual(['New video', 'A act'].sort());
+    const strands = await db.strands.where('subjectId').equals(subjectId).toArray();
+    expect(strands.map((x) => x.name).sort()).toEqual(['A strand', 'A strand 2']);
+  });
+
+  it('matching is case-insensitive and keeps genuine duplicates inside one backup', async () => {
+    const subjectId = await db.subjects.add({ name: 'Mathematics', order: 0 });
+    const strandId = await db.strands.add({ subjectId, name: 'Number', order: 0 });
+    const subStrandId = await db.subStrands.add({ strandId, name: 'Sub', order: 0 });
+    const standardId = await db.standards.add({ subStrandId, contentStandard: 'x', indicator: 'i', order: 0 });
+    const timetableId = await db.timetable.add({ dayOfWeek: 1, startTime: '08:00', endTime: '08:40', subjectId });
+    const lessonId = await db.lessons.add({ timetableId, standardId, date: '2026-10-05', status: 'planned' });
+    await db.activities.add({ lessonId, type: 'exercise', title: 'Blank', content: '', order: 0 });
+
+    const snap = await exportBackup();
+    snap.data.subjects[0].name = '  MATHEMATICS ';
+    // the backup has two identical blank activities; the device has one
+    snap.data.activities.push({ ...snap.data.activities[0], id: 500 });
+
+    const res = await importBackup(snap, { mode: 'merge' });
+    expect(await db.subjects.count()).toBe(1);
+    expect(res.skipped.activities).toBe(1);
+    expect(res.imported.activities).toBe(1);
+    expect(await db.activities.count()).toBe(2);
+  });
 });

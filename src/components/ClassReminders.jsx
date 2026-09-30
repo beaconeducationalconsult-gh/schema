@@ -34,6 +34,19 @@ export default function ClassReminders() {
     Object.fromEntries((await subjectRepo.all()).map((s) => [s.id, s]))
   );
 
+  // A tap on a system notification: the service worker focuses this window and
+  // asks us to route (same-origin paths only).
+  useEffect(() => {
+    const sw = navigator.serviceWorker;
+    if (!sw?.addEventListener) return undefined;
+    const onMessage = (e) => {
+      const url = e.data?.type === 'tc-navigate' ? e.data.url : null;
+      if (typeof url === 'string' && url.startsWith('/') && !url.startsWith('//')) navigate(url);
+    };
+    sw.addEventListener('message', onMessage);
+    return () => sw.removeEventListener('message', onMessage);
+  }, [navigate]);
+
   useEffect(() => {
     if (!subjects) return; // wait for names so the message never says just "Class"
     const reminded = loadReminded(dateKey);

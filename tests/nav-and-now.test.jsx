@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import React from 'react';
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { readFileSync } from 'node:fs';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { render, screen, waitFor, cleanup, fireEvent, act } from '@testing-library/react';
 import { MemoryRouter, useLocation } from 'react-router-dom';
 import AppNav from '../src/components/AppNav';
@@ -175,5 +176,76 @@ describe('class reminders', () => {
     await act(async () => { await new Promise((r) => setTimeout(r, 600)); });
     expect(screen.queryByText(/starts in/)).toBeNull();
     expect(localStorage.getItem('tc-reminded')).toBeNull();
+  });
+});
+
+describe('tapping a reminder notification', () => {
+  // Load the real service-worker script against a fake `self`.
+  function loadSw({ clients, origin = 'https://app.test' }) {
+    const listeners = {};
+    const self = {
+      location: { origin },
+      clients,
+      addEventListener: (type, fn) => { listeners[type] = fn; },
+    };
+    new Function('self', readFileSync('public/sw-notifications.js', 'utf8'))(self);
+    return async (data) => {
+      let pending;
+      const event = {
+        notification: { close: vi.fn(), data },
+        waitUntil: (p) => { pending = p; },
+      };
+      listeners.notificationclick(event);
+      await pending;
+      return event;
+    };
+  }
+  const win = (url) => ({ url, focus: vi.fn(async () => {}), postMessage: vi.fn() });
+
+  it('focuses an open window and asks it to route', async () => {
+    const other = win('https://elsewhere.test/');
+    const mine = win('https://app.test/schedule');
+    const click = loadSw({ clients: { matchAll: async () => [other, mine], openWindow: vi.fn() } });
+    const ev = await click({ url: '/' });
+    expect(ev.notification.close).toHaveBeenCalled();
+    expect(mine.postMessage).toHaveBeenCalledWith({ type: 'tc-navigate', url: '/' });
+    expect(mine.focus).toHaveBeenCalled();
+    expect(other.focus).not.toHaveBeenCalled();
+  });
+
+  it('opens a new window when the app is closed, and refuses off-site targets', async () => {
+    const openWindow = vi.fn(async () => {});
+    const click = loadSw({ clients: { matchAll: async () => [], openWindow } });
+    await click({ url: 'https://evil.test/' });
+    expect(openWindow).toHaveBeenLastCalledWith('/');
+    await click({ url: '//evil.test' });
+    expect(openWindow).toHaveBeenLastCalledWith('/');
+    await click({ url: '/history' });
+    expect(openWindow).toHaveBeenLastCalledWith('/history');
+    await click(undefined);
+    expect(openWindow).toHaveBeenLastCalledWith('/');
+  });
+
+  it('the app routes when the service worker sends tc-navigate', async () => {
+    const swTarget = new EventTarget();
+    Object.defineProperty(navigator, 'serviceWorker', { value: swTarget, configurable: true });
+    try {
+      render(
+        <MemoryRouter initialEntries={['/schedule']}>
+          <ClassReminders />
+          <Where />
+        </MemoryRouter>
+      );
+      swTarget.dispatchEvent(new MessageEvent('message', { data: { type: 'tc-navigate', url: '//evil.test' } }));
+      swTarget.dispatchEvent(new MessageEvent('message', { data: { type: 'other', url: '/history' } }));
+      expect(screen.getByTestId('where').textContent).toBe('/schedule');
+
+      await act(async () => {
+        swTarget.dispatchEvent(new MessageEvent('message', { data: { type: 'tc-navigate', url: '/history' } }));
+      });
+      expect(screen.getByTestId('where').textContent).toBe('/history');
+    } finally {
+      delete navigator.serviceWorker;
+    }
   });
 });

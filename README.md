@@ -46,6 +46,8 @@ Settings → Preferences drives real behaviour: **Week starts on** and **Show we
 
 Limitation: there is no backend or push service, so reminders only fire while the app is open (a tab or the installed PWA window, including in the background). They cannot wake a fully closed app.
 
+Tapping a system notification focuses the open app window (or opens the app if it was closed). That comes from a small `notificationclick` handler in `public/sw-notifications.js`, pulled into the generated service worker with Workbox `importScripts` (`vite.config.js`); the window then routes itself when it receives the worker's `tc-navigate` message. Only same-origin paths are accepted.
+
 ### Theming (dark and projector mode)
 **Settings → Display** offers *System / Light / Dark* and a *Projector mode* switch (larger type, stronger contrast; also a button in guided lesson mode). Both are stored per device in `localStorage` (`tc-theme`, `tc-projector`), applied before first paint by an inline script in `index.html`, and are not part of backups.
 
@@ -76,4 +78,4 @@ public/        Icons, offline page, robots.txt
 
 `subjects → strands → subStrands → standards` form the curriculum. `timetable` slots reference a subject. `lessons` reference a standard and a slot on a date, and own `activities`. `notes` and `resources` attach to lessons or standards. `settings` is a key/value table.
 
-The database name is `TeachingCompanion` (schema version 2 in `src/db/schema.js`). Any change to indexed fields needs a new `db.version(n)`; `tests/schema-migration.test.js` shows how to test an upgrade. Backups are validated on import, and **merge** mode re-links foreign keys so ids from another device never collide.
+The database name is `TeachingCompanion` (schema version 2 in `src/db/schema.js`). Any change to indexed fields needs a new `db.version(n)`; `tests/schema-migration.test.js` shows how to test an upgrade. Backups are validated on import, and **merge** mode re-links foreign keys so ids from another device never collide. Merge is also **idempotent**: rows that already exist (matched by name/slot/date/content within their parent, see `MERGE_ORDER` in `src/db/backup.js`) are skipped and kept as they are, so importing the same backup twice adds nothing, and Settings reports how many items were new versus already there.

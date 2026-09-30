@@ -56,6 +56,8 @@ export default defineConfig({
         globPatterns: ['**/*.{js,css,html,svg,png,ico,woff2}'],
         navigateFallback: '/index.html',
         navigateFallbackDenylist: [/^\/api\//],
+        // notificationclick handler (public/sw-notifications.js)
+        importScripts: ['sw-notifications.js'],
         cleanupOutdatedCaches: true,
         clientsClaim: true,
         skipWaiting: false,
