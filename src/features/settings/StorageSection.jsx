@@ -1,11 +1,10 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
+import { useLiveQuery } from 'dexie-react-hooks';
 import { databaseSummary } from '../../db/backup';
 
 export default function StorageSection() {
-  const [summary, setSummary] = useState(null);
-
-  const load = async () => setSummary(await databaseSummary());
-  useEffect(() => { load(); }, []);
+  // Re-runs whenever any table changes, so counts stay current while you work.
+  const summary = useLiveQuery(databaseSummary, []);
 
   if (!summary) return null;
 

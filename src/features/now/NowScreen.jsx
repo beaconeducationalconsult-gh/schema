@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useLiveQuery } from 'dexie-react-hooks';
 import { Link } from 'react-router-dom';
 import { useNow } from '../../hooks/useNow';
 import {
@@ -10,7 +11,7 @@ import {
   settings as settingsRepo,
   toDateKey,
 } from '../../db/helpers';
-import { ensureLessonFor, resolveStandardForSubject } from '../../db/schedule';
+import { ensureNowLesson, loadNowContext } from '../../db/now';
 import { daysSinceExport } from '../../db/backup';
 import { ACTIVITY_TYPES, db } from '../../db/schema';
 import { toast } from '../../lib/dialogs';
@@ -19,6 +20,8 @@ import ResourceManagerModal from '../../components/ResourceManagerModal';
 import RoutineTemplateModal from '../../components/RoutineTemplateModal';
 import CompleteLessonModal from '../../components/CompleteLessonModal';
 
+const EMPTY_LIST = [];
+const EMPTY_MAP = {};
 const DAY_NAMES = ['', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
 export const ACTIVITY_META = {
@@ -93,27 +96,20 @@ export default function NowScreen() {
   } = useNow();
 
   const [overrideSlotId, setOverrideSlotId] = useState(null);
-  const [subjectsMap, setSubjectsMap] = useState({});
-  const [context, setContext] = useState(null);
-  const [loadingContext, setLoadingContext] = useState(true);
-  const [recentNotes, setRecentNotes] = useState([]);
-  const [activityFeed, setActivityFeed] = useState([]);
-  const [stdResources, setStdResources] = useState([]);
-  const [subjectStandards, setSubjectStandards] = useState([]);
-  const [backupAgeDays, setBackupAgeDays] = useState(null);
 
   // Modals
   const [mediaModalOpen, setMediaModalOpen] = useState(false);
   const [routineModalOpen, setRoutineModalOpen] = useState(false);
   const [completeModalOpen, setCompleteModalOpen] = useState(false);
-  const [refreshTick, setRefreshTick] = useState(0);
 
-  useEffect(() => {
-    subjectRepo.all().then(list => {
-      setSubjectsMap(Object.fromEntries(list.map(s => [s.id, s])));
-    });
-    daysSinceExport().then(setBackupAgeDays);
-  }, []);
+  // Live reads: anything changed here, on the Lesson screen, in Curriculum or
+  // by a backup restore is reflected without manual refreshes.
+  const subjectsMap = useLiveQuery(
+    async () => Object.fromEntries((await subjectRepo.all()).map(s => [s.id, s])),
+    [],
+    EMPTY_MAP
+  );
+  const backupAgeDays = useLiveQuery(daysSinceExport, [], null);
 
   const liveSlot = current || next;
   const fallbackSlot = slots[0] || allSlots[0] || null;
@@ -122,75 +118,33 @@ export default function NowScreen() {
     : liveSlot || fallbackSlot;
   const isPreviewMode = !!overrideSlotId || (!liveSlot && !!fallbackSlot);
 
+  // Creating today's lesson row is a write, so it lives in an effect — keyed by
+  // slot + date, and only ever sets state after the async work finishes.
+  const slotId = activeSlot?.id ?? null;
+  const dateKey = toDateKey(now);
+  const lessonKey = slotId == null ? null : `${slotId}:${dateKey}`;
+  const [ensured, setEnsured] = useState({ key: null, lessonId: null });
   useEffect(() => {
+    if (!lessonKey) return undefined;
     let alive = true;
-    if (!activeSlot) {
-      setContext(null);
-      setLoadingContext(false);
-      return;
-    }
-    setLoadingContext(true);
-
-    (async () => {
-      const subject = await subjectRepo.get(activeSlot.subjectId);
-
-      const strands = subject
-        ? await db.strands.where('subjectId').equals(subject.id).sortBy('order')
-        : [];
-      const stdOptions = [];
-      for (const st of strands) {
-        const subs = await db.subStrands.where('strandId').equals(st.id).sortBy('order');
-        for (const sub of subs) {
-          const stds = await db.standards.where('subStrandId').equals(sub.id).sortBy('order');
-          for (const std of stds) {
-            stdOptions.push({
-              ...std,
-              _strandName: st.name,
-              _subStrandName: sub.name,
-            });
-          }
-        }
-      }
-
-      const lesson = await ensureLessonFor(activeSlot, now);
-
-      let standard = null, subStrand = null, strand = null;
-      if (lesson?.standardId) {
-        const ctx = await standardRepo.withContext(lesson.standardId);
-        if (ctx) ({ standard, subStrand, strand } = ctx);
-      }
-      if (!standard && subject) {
-        const resolved = await resolveStandardForSubject(subject.id);
-        if (resolved) {
-          ({ standard, subStrand, strand } = resolved);
-          if (lesson && standard) {
-            await db.lessons.update(lesson.id, { standardId: standard.id });
-            lesson.standardId = standard.id;
-          }
-        }
-      }
-
-      const resList = standard ? await resourceRepo.byStandard(standard.id) : [];
-
-      if (!alive) return;
-      setSubjectStandards(stdOptions);
-      setStdResources(resList);
-      setContext({ slot: activeSlot, subject, strand, subStrand, standard, lesson });
-      setLoadingContext(false);
-
-      if (lesson) {
-        const [n, a] = await Promise.all([
-          noteRepo.byLesson(lesson.id),
-          activityRepo.byLesson(lesson.id),
-        ]);
-        if (!alive) return;
-        setRecentNotes(n.slice(0, 4));
-        setActivityFeed(a);
-      }
-    })();
-
+    ensureNowLesson(activeSlot, now).then(lesson => {
+      if (alive) setEnsured({ key: lessonKey, lessonId: lesson?.id ?? null });
+    });
     return () => { alive = false; };
-  }, [activeSlot?.id, now.getDay(), toDateKey(now), refreshTick]);
+    // `activeSlot`/`now` are captured for their values at the moment the key changes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lessonKey]);
+  const lessonId = ensured.key === lessonKey ? ensured.lessonId : null;
+
+  const context = useLiveQuery(
+    () => (lessonId != null ? loadNowContext(slotId, lessonId) : null),
+    [slotId, lessonId]
+  );
+  const loadingContext = !context;
+  const subjectStandards = context?.subjectStandards ?? EMPTY_LIST;
+  const stdResources = context?.resources ?? EMPTY_LIST;
+  const recentNotes = context?.recentNotes ?? EMPTY_LIST;
+  const activityFeed = context?.activities ?? EMPTY_LIST;
 
   const handleSwitchStandard = async (newStdId) => {
     if (!context?.subject) return;
@@ -199,20 +153,7 @@ export default function NowScreen() {
     if (context.lesson) {
       await db.lessons.update(context.lesson.id, { standardId: stdId });
     }
-    const [ctx, resList] = await Promise.all([
-      standardRepo.withContext(stdId),
-      resourceRepo.byStandard(stdId),
-    ]);
-    if (ctx) {
-      setStdResources(resList);
-      setContext(prev => ({
-        ...prev,
-        strand: ctx.strand,
-        subStrand: ctx.subStrand,
-        standard: ctx.standard,
-        lesson: prev.lesson ? { ...prev.lesson, standardId: stdId } : null,
-      }));
-    }
+    // The live query above picks the change up on its own.
   };
 
   if (!activeSlot && allSlots.length === 0) {
@@ -273,7 +214,6 @@ export default function NowScreen() {
           <ActivityPromptBar
             lessonId={context.lesson?.id}
             standard={context.standard}
-            onAdded={(a) => setActivityFeed(prev => [...prev, a])}
             onOpenTemplates={() => setRoutineModalOpen(true)}
           />
 
@@ -284,9 +224,6 @@ export default function NowScreen() {
               onToggleDone={async (act) => {
                 const nextDone = !act.done;
                 await activityRepo.update(act.id, { done: nextDone });
-                setActivityFeed(prev =>
-                  prev.map(x => (x.id === act.id ? { ...x, done: nextDone } : x))
-                );
               }}
               onCompleteLesson={() => setCompleteModalOpen(true)}
             />
@@ -295,7 +232,6 @@ export default function NowScreen() {
           <NotesStrip
             lesson={context.lesson}
             notes={recentNotes}
-            onAdded={(n) => setRecentNotes(prev => [n, ...prev].slice(0, 4))}
           />
 
           {context.lesson && (
@@ -311,10 +247,6 @@ export default function NowScreen() {
         <ResourceManagerModal
           standard={context.standard}
           onClose={() => setMediaModalOpen(false)}
-          onChanged={async () => {
-            const list = await resourceRepo.byStandard(context.standard.id);
-            setStdResources(list);
-          }}
         />
       )}
 
@@ -324,7 +256,6 @@ export default function NowScreen() {
           standard={context.standard}
           hasExistingActivities={activityFeed.length > 0}
           onClose={() => setRoutineModalOpen(false)}
-          onApplied={(updated) => setActivityFeed(updated)}
         />
       )}
 
@@ -344,7 +275,6 @@ export default function NowScreen() {
                 standardId: nextStd.standard.id,
               });
             }
-            setRefreshTick(t => t + 1);
           }}
         />
       )}
@@ -620,7 +550,7 @@ function NoStandardCard({ subject }) {
 /* ------------------------------------------------------------------ */
 /*  Activity prompt bar + 1-Tap Routine Templates                      */
 /* ------------------------------------------------------------------ */
-function ActivityPromptBar({ lessonId, standard, onAdded, onOpenTemplates }) {
+function ActivityPromptBar({ lessonId, standard, onOpenTemplates }) {
   const [openType, setOpenType] = useState(null);
   const [title, setTitle] = useState('');
   const [draft, setDraft] = useState('');
@@ -648,8 +578,7 @@ function ActivityPromptBar({ lessonId, standard, onAdded, onOpenTemplates }) {
       duration: Number(duration) || 10,
       done: false,
     };
-    const id = await activityRepo.add(payload);
-    onAdded({ id, ...payload, order: 999 });
+    await activityRepo.add(payload);
     setOpenType(null);
   };
 
@@ -835,7 +764,7 @@ function ActivityFeed({ items, lessonId, onToggleDone, onCompleteLesson }) {
 /* ------------------------------------------------------------------ */
 /*  Notes strip                                                        */
 /* ------------------------------------------------------------------ */
-function NotesStrip({ lesson, notes, onAdded }) {
+function NotesStrip({ lesson, notes }) {
   const [text, setText] = useState('');
   const [tag, setTag] = useState('prep');
   const [saving, setSaving] = useState(false);
@@ -849,8 +778,7 @@ function NotesStrip({ lesson, notes, onAdded }) {
       body: text.trim(),
       tags: tag ? [tag] : [],
     };
-    const id = await noteRepo.add(payload);
-    onAdded({ id, ...payload, createdAt: Date.now() });
+    await noteRepo.add(payload);
     setText('');
     setSaving(false);
   };

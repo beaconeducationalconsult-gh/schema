@@ -1,22 +1,21 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
+import { useLiveQuery } from 'dexie-react-hooks';
 import { resources as resourceRepo } from '../db/helpers';
 import { PRESET_DIAGRAMS } from '../lib/classroomMedia';
 
 export default function ResourceManagerModal({ standard, onClose, onChanged }) {
-  const [items, setItems] = useState([]);
   const [tab, setTab] = useState('upload'); // 'upload' | 'presets' | 'link'
   const [type, setType] = useState('video');
   const [url, setUrl] = useState('');
   const [caption, setCaption] = useState('');
   const [uploadPreview, setUploadPreview] = useState(null);
 
-  const reload = async () => {
-    if (!standard?.id) return;
-    const list = await resourceRepo.byStandard(standard.id);
-    setItems(list);
-  };
-
-  useEffect(() => { reload(); }, [standard?.id]);
+  // Live: updates itself after every add / remove / caption edit.
+  const items = useLiveQuery(
+    () => (standard?.id ? resourceRepo.byStandard(standard.id) : []),
+    [standard?.id],
+    []
+  );
 
   const handleFileChange = (e) => {
     const file = e.target.files?.[0];
@@ -39,7 +38,6 @@ export default function ResourceManagerModal({ standard, onClose, onChanged }) {
     });
     setUploadPreview(null);
     setCaption('');
-    await reload();
     onChanged?.();
   };
 
@@ -51,7 +49,6 @@ export default function ResourceManagerModal({ standard, onClose, onChanged }) {
       url: preset.url,
       caption: preset.caption,
     });
-    await reload();
     onChanged?.();
   };
 
@@ -65,13 +62,11 @@ export default function ResourceManagerModal({ standard, onClose, onChanged }) {
     });
     setUrl('');
     setCaption('');
-    await reload();
     onChanged?.();
   };
 
   const remove = async (id) => {
     await resourceRepo.remove(id);
-    await reload();
     onChanged?.();
   };
 

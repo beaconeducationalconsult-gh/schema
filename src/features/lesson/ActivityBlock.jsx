@@ -3,7 +3,7 @@ import { activityRepo } from '../../db/helpers';
 import { confirmDialog } from '../../lib/dialogs';
 import { ACTIVITY_META } from './LessonScreen';
 
-export default function ActivityBlock({ activity, index, onMoveUp, onMoveDown, onReload }) {
+export default function ActivityBlock({ activity, index, onMoveUp, onMoveDown }) {
   const meta = ACTIVITY_META[activity.type] || ACTIVITY_META.exercise;
   const [editing, setEditing] = useState(false);
   const [title, setTitle] = useState(activity.title || meta.label);
@@ -18,20 +18,17 @@ export default function ActivityBlock({ activity, index, onMoveUp, onMoveDown, o
       duration: Number(duration) || 0,
     });
     setEditing(false);
-    onReload?.();
   };
 
   const toggleDone = async () => {
     const next = !done;
     setDone(next);
     await activityRepo.update(activity.id, { done: next });
-    onReload?.();
   };
 
   const remove = async () => {
     if (!(await confirmDialog({ title: 'Delete this activity?', confirmLabel: 'Delete', danger: true }))) return;
     await activityRepo.remove(activity.id);
-    onReload?.();
   };
 
   return (

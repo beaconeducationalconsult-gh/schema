@@ -28,3 +28,19 @@ describe('academic year', () => {
     expect(currentTerm([], new Date())).toBeNull();
   });
 });
+
+import { termForDate } from '../src/lib/academicYear';
+describe('termForDate (History "This term")', () => {
+  const t = defaultTerms(2026);
+  it('returns the current term in term time', () => {
+    expect(termForDate(t, new Date(2026, 9, 5)).label).toBe('Term 1');
+  });
+  it('returns the most recent term during a holiday', () => {
+    expect(termForDate(t, new Date(2027, 0, 1)).label).toBe('Term 1');
+    expect(termForDate(t, new Date(2027, 7, 15)).label).toBe('Term 3');
+  });
+  it('returns the first term before the year starts, and null with no terms', () => {
+    expect(termForDate(t, new Date(2026, 7, 1)).label).toBe('Term 1');
+    expect(termForDate([], new Date())).toBeNull();
+  });
+});

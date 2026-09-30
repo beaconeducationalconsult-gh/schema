@@ -1,4 +1,5 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
+import { useLiveQuery } from 'dexie-react-hooks';
 import { Link } from 'react-router-dom';
 import {
   notes as noteRepo,
@@ -8,13 +9,35 @@ import {
 import { db } from '../../db/schema';
 import { confirmDialog } from '../../lib/dialogs';
 
+const EMPTY = [];
+
+async function loadNotesData() {
+  const [items, subjects, rawStds] = await Promise.all([
+    noteRepo.allWithContext(),
+    subjectRepo.all(),
+    db.standards.toArray(),
+  ]);
+  const standardsList = [];
+  for (const s of rawStds) {
+    const ctx = await standardRepo.withContext(s.id);
+    standardsList.push({
+      ...s,
+      _subjectName: ctx?.subject?.name || 'Subject',
+      _subjectId: ctx?.subject?.id || null,
+    });
+  }
+  return { items, subjects, standardsList };
+}
+
 const PRESET_TAGS = ['prep', 'remedial', 'insight', 'homework', 'absent', 'assessment'];
 
 export default function NotesScreen() {
-  const [items, setItems] = useState([]);
-  const [subjects, setSubjects] = useState([]);
-  const [standardsList, setStandardsList] = useState([]);
-  const [loading, setLoading] = useState(true);
+  // Live: notes added from a lesson, the Now screen or here all appear instantly.
+  const data = useLiveQuery(loadNotesData, []);
+  const loading = data === undefined;
+  const items = data?.items ?? EMPTY;
+  const subjects = data?.subjects ?? EMPTY;
+  const standardsList = data?.standardsList ?? EMPTY;
 
   // Filters
   const [subjectFilter, setSubjectFilter] = useState(null);
@@ -28,32 +51,6 @@ export default function NotesScreen() {
   const [editingId, setEditingId] = useState(null);
   const [editBody, setEditBody] = useState('');
   const [editTags, setEditTags] = useState([]);
-
-  const reload = async () => {
-    setLoading(true);
-    const [hydrated, subs, rawStds] = await Promise.all([
-      noteRepo.allWithContext(),
-      subjectRepo.all(),
-      db.standards.toArray(),
-    ]);
-
-    const enrichedStds = [];
-    for (const s of rawStds) {
-      const ctx = await standardRepo.withContext(s.id);
-      enrichedStds.push({
-        ...s,
-        _subjectName: ctx?.subject?.name || 'Subject',
-        _subjectId: ctx?.subject?.id || null,
-      });
-    }
-
-    setItems(hydrated);
-    setSubjects(subs);
-    setStandardsList(enrichedStds);
-    setLoading(false);
-  };
-
-  useEffect(() => { reload(); }, []);
 
   const allTags = useMemo(() => {
     const set = new Set(PRESET_TAGS);
@@ -100,7 +97,6 @@ export default function NotesScreen() {
       tags: mergedTags,
     });
     setBody('');
-    await reload();
   };
 
   const startEdit = (note) => {
@@ -116,13 +112,11 @@ export default function NotesScreen() {
       tags: editTags,
     });
     setEditingId(null);
-    await reload();
   };
 
   const deleteNote = async (id) => {
     if (!(await confirmDialog({ title: 'Delete this note?', confirmLabel: 'Delete', danger: true }))) return;
     await noteRepo.remove(id);
-    await reload();
   };
 
   return (

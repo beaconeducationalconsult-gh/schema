@@ -1,13 +1,17 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
+import { useLiveQuery } from 'dexie-react-hooks';
 import { Link } from 'react-router-dom';
 import { subjects as subjectRepo, toDateKey } from '../../db/helpers';
 import { queryLessons, computeStats, toCSV, downloadFile } from '../../db/history';
+import { getSettings, getDefaultSettings } from '../../db/settings';
+import { termForDate } from '../../lib/academicYear';
 import LessonRow from './LessonRow';
 import StatsBar from './StatsBar';
 import Filters from './Filters';
 
+const EMPTY = [];
+
 export default function HistoryScreen() {
-  const [subjects, setSubjects] = useState([]);
   const [filters, setFilters] = useState({
     range: 'month',
     from: '',
@@ -17,35 +21,29 @@ export default function HistoryScreen() {
     search: '',
     sort: 'desc',
   });
-  const [rows, setRows] = useState([]);
-  const [stats, setStats] = useState(null);
-  const [loading, setLoading] = useState(true);
 
-  useEffect(() => { subjectRepo.all().then(setSubjects); }, []);
+  // Live: finishing a lesson, editing a note or importing a backup updates the list in place.
+  const subjects = useLiveQuery(() => subjectRepo.all(), [], EMPTY);
+  const prefs = useLiveQuery(getSettings, []);
+  const terms = prefs?.terms ?? getDefaultSettings().terms;
 
-  const { from, to } = useMemo(
-    () => resolveRange(filters),
-    [filters.range, filters.from, filters.to]
+  const { from, to } = resolveRange(filters, terms);
+
+  const result = useLiveQuery(
+    () =>
+      queryLessons({
+        from,
+        to,
+        subjectId: filters.subjectId,
+        status: filters.status,
+        search: filters.search,
+        sort: filters.sort,
+      }),
+    [from, to, filters.subjectId, filters.status, filters.search, filters.sort]
   );
-
-  useEffect(() => {
-    let alive = true;
-    setLoading(true);
-    queryLessons({
-      from,
-      to,
-      subjectId: filters.subjectId,
-      status: filters.status,
-      search: filters.search,
-      sort: filters.sort,
-    }).then(r => {
-      if (!alive) return;
-      setRows(r);
-      setStats(computeStats(r));
-      setLoading(false);
-    });
-    return () => { alive = false; };
-  }, [from, to, filters.subjectId, filters.status, filters.search, filters.sort]);
+  const loading = result === undefined;
+  const rows = result ?? EMPTY;
+  const stats = useMemo(() => (result ? computeStats(result) : null), [result]);
 
   const exportCSV = () => {
     const csv = toCSV(rows);
@@ -120,7 +118,7 @@ export default function HistoryScreen() {
   );
 }
 
-function resolveRange(filters) {
+function resolveRange(filters, terms) {
   const today = new Date();
   if (filters.range === 'all') return { from: null, to: null };
 
@@ -141,6 +139,9 @@ function resolveRange(filters) {
   }
 
   if (filters.range === 'term') {
+    // Uses the term dates from Settings; falls back to a rough calendar if none are set.
+    const t = termForDate(terms, today);
+    if (t) return { from: t.from, to: t.to };
     const y = today.getFullYear();
     const m = today.getMonth();
     let from, to;

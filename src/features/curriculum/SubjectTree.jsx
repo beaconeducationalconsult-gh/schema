@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
+import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../../db/schema';
 import {
   loadSubjectTree,
@@ -13,25 +14,17 @@ import InlineAdd from './InlineAdd';
 import ResourceManagerModal from '../../components/ResourceManagerModal';
 import ResourceGallery from '../../components/ResourceGallery';
 
-export default function SubjectTree({ subject, currentStandardId, onSetCurrent, onChanged }) {
-  const [tree, setTree] = useState([]);
-  const [openStrand, setOpenStrand] = useState(null);
-  const [openSub, setOpenSub] = useState(null);
+export default function SubjectTree({ subject, currentStandardId, onSetCurrent }) {
+  // Live tree: edits, deletes, media changes and bulk imports all show up by themselves.
+  const tree = useLiveQuery(() => loadSubjectTree(subject.id), [subject.id]);
+  // `undefined` = never toggled → default to the first strand / sub-strand; `null` = collapsed on purpose.
+  const [strandPick, setOpenStrand] = useState(undefined);
+  const [subPick, setOpenSub] = useState(undefined);
   const [editing, setEditing] = useState(null);
   const [mediaStandard, setMediaStandard] = useState(null);
 
-  async function reload() {
-    const t = await loadSubjectTree(subject.id);
-    setTree(t);
-    if (t.length > 0 && openStrand === null) {
-      setOpenStrand(t[0].id);
-      if (t[0].subStrands?.length > 0 && openSub === null) {
-        setOpenSub(t[0].subStrands[0].id);
-      }
-    }
-  }
-
-  useEffect(() => { reload(); }, [subject.id]);
+  const openStrand = strandPick === undefined ? tree?.[0]?.id ?? null : strandPick;
+  const openSub = subPick === undefined ? tree?.[0]?.subStrands?.[0]?.id ?? null : subPick;
 
   const addStrand = async (name) => {
     const id = await db.strands.add({
@@ -40,8 +33,6 @@ export default function SubjectTree({ subject, currentStandardId, onSetCurrent, 
       order: await nextOrder('strands', 'subjectId', subject.id),
     });
     setOpenStrand(id);
-    reload();
-    onChanged?.();
   };
 
   const addSubStrand = async (strandId, name) => {
@@ -51,8 +42,6 @@ export default function SubjectTree({ subject, currentStandardId, onSetCurrent, 
       order: await nextOrder('subStrands', 'strandId', strandId),
     });
     setOpenSub(id);
-    reload();
-    onChanged?.();
   };
 
   const addStandard = async (subStrandId, payload) => {
@@ -61,9 +50,9 @@ export default function SubjectTree({ subject, currentStandardId, onSetCurrent, 
       order: await nextOrder('standards', 'subStrandId', subStrandId),
       ...payload,
     });
-    reload();
-    onChanged?.();
   };
+
+  if (!tree) return null;
 
   if (tree.length === 0) {
     return (
@@ -137,8 +126,6 @@ export default function SubjectTree({ subject, currentStandardId, onSetCurrent, 
                               onDelete={async () => {
                                 if (await confirmDialog({ title: 'Delete this standard?', confirmLabel: 'Delete', danger: true })) {
                                   await deleteStandard(std.id);
-                                  reload();
-                                  onChanged?.();
                                 }
                               }}
                             />
@@ -157,8 +144,6 @@ export default function SubjectTree({ subject, currentStandardId, onSetCurrent, 
                               onClick={async () => {
                                 if (await confirmDialog({ title: 'Delete sub-strand?', message: 'All standards under it will be deleted too.', confirmLabel: 'Delete', danger: true })) {
                                   await deleteSubStrand(sub.id);
-                                  reload();
-                                  onChanged?.();
                                 }
                               }}
                               className="text-xs text-rose-500 px-2 hover:underline"
@@ -182,8 +167,6 @@ export default function SubjectTree({ subject, currentStandardId, onSetCurrent, 
                     onClick={async () => {
                       if (await confirmDialog({ title: 'Delete strand?', message: 'All sub-strands and standards under it will be deleted too.', confirmLabel: 'Delete', danger: true })) {
                         await deleteStrand(strand.id);
-                        reload();
-                        onChanged?.();
                       }
                     }}
                     className="text-xs text-rose-500 px-2 hover:underline"
@@ -205,7 +188,6 @@ export default function SubjectTree({ subject, currentStandardId, onSetCurrent, 
         <StandardEditor
           standard={editing.standard}
           onClose={() => setEditing(null)}
-          onSaved={() => { reload(); onChanged?.(); }}
         />
       )}
 
@@ -213,7 +195,6 @@ export default function SubjectTree({ subject, currentStandardId, onSetCurrent, 
         <ResourceManagerModal
           standard={mediaStandard}
           onClose={() => setMediaStandard(null)}
-          onChanged={() => { reload(); onChanged?.(); }}
         />
       )}
     </div>

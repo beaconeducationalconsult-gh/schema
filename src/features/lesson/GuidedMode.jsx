@@ -6,7 +6,7 @@ import { playChime, primeAudio } from '../../lib/chime';
 import ResourceGallery from '../../components/ResourceGallery';
 import CompleteLessonModal from '../../components/CompleteLessonModal';
 
-export default function GuidedMode({ data, onExit, onProgress }) {
+export default function GuidedMode({ data, onExit }) {
   const { subject, standard, activities, resources = [] } = data;
   const [index, setIndex] = useState(() => {
     const first = activities.findIndex(a => !a.done);
@@ -102,7 +102,6 @@ export default function GuidedMode({ data, onExit, onProgress }) {
   };
   const markDone = async () => {
     await activityRepo.update(current.id, { done: true });
-    onProgress?.();
     if (index < activities.length - 1) {
       next();
     } else {
@@ -287,8 +286,7 @@ export default function GuidedMode({ data, onExit, onProgress }) {
           onClose={() => setCompleteOpen(false)}
           onCompleted={() => {
             setCompleteOpen(false);
-            onProgress?.();
-            onExit();
+                    onExit();
           }}
         />
       )}

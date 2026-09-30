@@ -1,4 +1,5 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState } from 'react';
+import { useLiveQuery } from 'dexie-react-hooks';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { loadWeek, ensureLessonFor } from '../../db/schedule';
 import {
@@ -12,6 +13,7 @@ import WeekGrid from './WeekGrid';
 import DayList from './DayList';
 import SlotEditor from './SlotEditor';
 
+const EMPTY = [];
 const STORAGE_KEY = 'week:includeWeekend';
 
 export default function WeekScreen() {
@@ -30,12 +32,9 @@ export default function WeekScreen() {
   const [view, setView] = useState(() => {
     return window.matchMedia('(min-width: 768px)').matches ? 'grid' : 'list';
   });
-  const [data, setData] = useState(null);
-  const [loading, setLoading] = useState(true);
   const [todayKey, setTodayKey] = useState(toDateKey(new Date()));
   const [editMode, setEditMode] = useState(false);
   const [editingSlot, setEditingSlot] = useState(null);
-  const [subjectsList, setSubjectsList] = useState([]);
 
   useEffect(() => {
     const id = setInterval(() => setTodayKey(toDateKey(new Date())), 60_000);
@@ -50,24 +49,14 @@ export default function WeekScreen() {
     setSearch({ week: toDateKey(weekStart) }, { replace: true });
   }, [weekStart]);
 
-  const reload = useCallback(() => {
-    let alive = true;
-    setLoading(true);
-    Promise.all([
-      loadWeek(weekStart, { includeWeekend }),
-      subjectRepo.all(),
-    ]).then(([d, subs]) => {
-      if (!alive) return;
-      setData(d);
-      setSubjectsList(subs);
-      setLoading(false);
-    });
-    return () => { alive = false; };
-  }, [toDateKey(weekStart), includeWeekend]);
-
-  useEffect(() => {
-    return reload();
-  }, [reload]);
+  // Live: editing a slot, completing a lesson or restoring a backup refreshes the grid.
+  const weekKey = toDateKey(weekStart);
+  const data = useLiveQuery(
+    () => loadWeek(weekStart, { includeWeekend }),
+    [weekKey, includeWeekend]
+  );
+  const subjectsList = useLiveQuery(() => subjectRepo.all(), [], EMPTY);
+  const loading = data === undefined;
 
   const isThisWeek = isSameWeek(weekStart, new Date());
 
@@ -205,7 +194,6 @@ export default function WeekScreen() {
           onClose={() => setEditingSlot(null)}
           onSaved={() => {
             setEditingSlot(null);
-            reload();
           }}
         />
       )}

@@ -1,5 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { useLiveQuery } from 'dexie-react-hooks';
 import { getSettings, saveSettings, resetSettings } from '../../db/settings';
 import { resetToSeed } from '../../db/backup';
 import { confirmDialog, toast } from '../../lib/dialogs';
@@ -11,25 +12,21 @@ import StorageSection from './StorageSection';
 import AboutSection from './AboutSection';
 
 export default function SettingsScreen() {
-  const [settings, setSettings] = useState(null);
-  const [dirty, setDirty] = useState(false);
-  const [storageKey, setStorageKey] = useState(0);
+  // Stored values stay live (backup import, reset, other tabs…); edits are
+  // kept in a small draft of just the fields the teacher touched, and only
+  // those are written on save — so we never overwrite unrelated keys such as
+  // the last-backup timestamp or the per-subject "current standard" pointers.
+  const stored = useLiveQuery(getSettings, []);
+  const [draft, setDraft] = useState({});
+  const settings = stored ? { ...stored, ...draft } : null;
+  const dirty = Object.keys(draft).length > 0;
 
-  const reload = async () => {
-    setSettings(await getSettings());
-    setStorageKey(k => k + 1);
-  };
-  useEffect(() => { reload(); }, []);
-
-  const update = (patch) => {
-    setSettings(s => ({ ...s, ...patch }));
-    setDirty(true);
-  };
+  const update = (patch) => setDraft((d) => ({ ...d, ...patch }));
 
   const save = async () => {
-    const { terms, prefs, currentStandardBySubject, ...scalar } = settings;
-    await saveSettings({ ...scalar, terms, prefs, currentStandardBySubject });
-    setDirty(false);
+    await saveSettings(draft);
+    setDraft({});
+    toast.success('Settings saved.');
   };
 
   if (!settings) return <div className="p-6 text-slate-500">Loading…</div>;
@@ -45,7 +42,7 @@ export default function SettingsScreen() {
           <button
             onClick={save}
             disabled={!dirty}
-            className="text-sm px-3 py-1.5 rounded-lg bg-slate-900 text-white disabled:opacity-40"
+            className="text-sm px-3 py-1.5 rounded-lg bg-primary text-on-primary disabled:opacity-40"
           >
             Save
           </button>
@@ -65,9 +62,9 @@ export default function SettingsScreen() {
           onChange={(prefs) => update({ prefs })}
         />
 
-        <BackupSection onImported={reload} />
+        <BackupSection onImported={() => setDraft({})} />
 
-        <StorageSection key={storageKey} />
+        <StorageSection />
 
         <AboutSection
           onReset={async () => {
@@ -80,7 +77,7 @@ export default function SettingsScreen() {
             if (!ok) return;
             await resetSettings();
             await resetToSeed();
-            await reload();
+            setDraft({});
             toast.success('Reset complete.');
           }}
         />

@@ -1,4 +1,5 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useState } from 'react';
+import { useLiveQuery } from 'dexie-react-hooks';
 import { useParams, useSearchParams, Link, useNavigate } from 'react-router-dom';
 import {
   lessonsFull,
@@ -16,6 +17,8 @@ import ResourceManagerModal from '../../components/ResourceManagerModal';
 import RoutineTemplateModal from '../../components/RoutineTemplateModal';
 import CompleteLessonModal from '../../components/CompleteLessonModal';
 
+const EMPTY = [];
+
 export const ACTIVITY_META = {
   exercise:           { label: 'Exercise',       emoji: '✏️', color: 'bg-blue-600' },
   correction:         { label: 'Correction',     emoji: '✅', color: 'bg-emerald-600' },
@@ -32,34 +35,27 @@ export default function LessonScreen() {
   const navigate = useNavigate();
   const guided = search.get('guided') === '1';
 
-  const [data, setData] = useState(null);
-  const [loading, setLoading] = useState(true);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [routineOpen, setRoutineOpen] = useState(false);
   const [mediaOpen, setMediaOpen] = useState(false);
   const [completeOpen, setCompleteOpen] = useState(false);
-  const [allStandards, setAllStandards] = useState([]);
   const [editingStandard, setEditingStandard] = useState(false);
 
-  const reload = useCallback(async () => {
-    const d = await lessonsFull.hydrate(Number(id));
-    setData(d);
-    setLoading(false);
-  }, [id]);
+  // Live: activities, notes, status and standard changes (from here, guided
+  // mode, or another screen) re-render this page without manual reloads.
+  // undefined = loading, null = no such lesson.
+  const data = useLiveQuery(() => lessonsFull.hydrate(Number(id)), [id]);
+  const loading = data === undefined;
 
-  useEffect(() => { reload(); }, [reload]);
-
-  useEffect(() => {
-    (async () => {
-      const list = await db.standards.toArray();
-      const enriched = [];
-      for (const s of list) {
-        const ctx = await standardRepo.withContext(s.id);
-        enriched.push({ ...s, _subject: ctx?.subject?.name, _strand: ctx?.strand?.name });
-      }
-      setAllStandards(enriched);
-    })();
-  }, []);
+  const allStandards = useLiveQuery(async () => {
+    const list = await db.standards.toArray();
+    const out = [];
+    for (const s of list) {
+      const ctx = await standardRepo.withContext(s.id);
+      out.push({ ...s, _subject: ctx?.subject?.name, _strand: ctx?.strand?.name });
+    }
+    return out;
+  }, [], EMPTY);
 
   if (loading) return <div className="p-6 text-slate-500">Loading lesson…</div>;
   if (!data || !data.lesson) return <NotFound />;
@@ -69,7 +65,6 @@ export default function LessonScreen() {
       <GuidedMode
         data={data}
         onExit={() => navigate(`/lesson/${id}`)}
-        onProgress={reload}
       />
     );
   }
@@ -132,7 +127,6 @@ export default function LessonScreen() {
           date={lesson.date}
           onUpdate={async (patch) => {
             await lessonsFull.update(lesson.id, patch);
-            reload();
           }}
         />
 
@@ -146,7 +140,6 @@ export default function LessonScreen() {
             currentId={standard.id}
             onChange={async (newId) => {
               await lessonsFull.update(lesson.id, { standardId: newId });
-              reload();
             }}
             onEditStandard={() => setEditingStandard(true)}
             onManageMedia={() => setMediaOpen(true)}
@@ -160,7 +153,6 @@ export default function LessonScreen() {
                 onChange={async (e) => {
                   if (!e.target.value) return;
                   await lessonsFull.update(lesson.id, { standardId: Number(e.target.value) });
-                  reload();
                 }}
                 className="text-xs border border-amber-300 rounded-lg px-2 py-1 bg-white text-slate-800"
               >
@@ -206,10 +198,8 @@ export default function LessonScreen() {
           ) : (
             <ActivityList
               activities={activities}
-              onReload={reload}
               onReorder={async (ids) => {
                 await activityRepo.reorder(lesson.id, ids);
-                reload();
               }}
             />
           )}
@@ -219,7 +209,6 @@ export default function LessonScreen() {
           lessonId={lesson.id}
           standardId={standard?.id}
           notes={notes}
-          onReload={reload}
         />
       </main>
 
@@ -229,7 +218,6 @@ export default function LessonScreen() {
           onClose={() => setPickerOpen(false)}
           onAdded={() => {
             setPickerOpen(false);
-            reload();
           }}
         />
       )}
@@ -240,7 +228,6 @@ export default function LessonScreen() {
           standard={standard}
           hasExistingActivities={activities.length > 0}
           onClose={() => setRoutineOpen(false)}
-          onApplied={() => reload()}
         />
       )}
 
@@ -248,7 +235,6 @@ export default function LessonScreen() {
         <ResourceManagerModal
           standard={standard}
           onClose={() => setMediaOpen(false)}
-          onChanged={() => reload()}
         />
       )}
 
@@ -258,7 +244,6 @@ export default function LessonScreen() {
           onClose={() => setCompleteOpen(false)}
           onCompleted={() => {
             setCompleteOpen(false);
-            reload();
           }}
         />
       )}
@@ -269,7 +254,6 @@ export default function LessonScreen() {
           onClose={() => setEditingStandard(false)}
           onSaved={() => {
             setEditingStandard(false);
-            reload();
           }}
         />
       )}
@@ -399,7 +383,7 @@ function Meta({ label, value, block }) {
 
 /* ------------------------------------------------------------------ */
 
-function ActivityList({ activities, onReload, onReorder }) {
+function ActivityList({ activities, onReorder }) {
   const [dragged, setDragged] = useState(null);
 
   const move = (fromIdx, toIdx) => {
@@ -428,7 +412,6 @@ function ActivityList({ activities, onReload, onReorder }) {
             index={idx}
             onMoveUp={() => move(idx, idx - 1)}
             onMoveDown={() => move(idx, idx + 1)}
-            onReload={onReload}
           />
         </li>
       ))}
@@ -446,7 +429,7 @@ function swap(arr, i, j) {
 
 /* ------------------------------------------------------------------ */
 
-function NotesPanel({ lessonId, standardId, notes, onReload }) {
+function NotesPanel({ lessonId, standardId, notes }) {
   const [text, setText] = useState('');
   const [tag, setTag] = useState('prep');
 
@@ -459,11 +442,9 @@ function NotesPanel({ lessonId, standardId, notes, onReload }) {
       tags: tag ? [tag] : [],
     });
     setText('');
-    onReload();
   };
   const remove = async (id) => {
     await noteRepo.remove(id);
-    onReload();
   };
 
   return (

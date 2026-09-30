@@ -54,3 +54,19 @@ export const COMMON_SUBJECTS = [
   'French',
   'Physical Education',
 ];
+
+/**
+ * The term the History "This term" shortcut should show: the current one, or —
+ * during a holiday — the one that most recently ended (or the next to start
+ * if the year hasn't begun). Null when no terms are configured.
+ */
+export function termForDate(terms, date = new Date()) {
+  const valid = (terms || []).filter((t) => t.from && t.to);
+  if (!valid.length) return null;
+  const now = currentTerm(valid, date);
+  if (now) return now;
+  const key = toDateKey(date);
+  const past = valid.filter((t) => t.to < key).sort((a, b) => b.to.localeCompare(a.to));
+  if (past.length) return past[0];
+  return valid.slice().sort((a, b) => a.from.localeCompare(b.from))[0];
+}

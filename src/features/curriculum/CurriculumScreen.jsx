@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
+import { useLiveQuery } from 'dexie-react-hooks';
 import { subjects as subjectRepo, settings } from '../../db/helpers';
 import { subjectStats } from '../../db/curriculum';
 import SubjectTree from './SubjectTree';
@@ -6,29 +7,24 @@ import SubjectEditor from './SubjectEditor';
 import BulkImportModal from './BulkImportModal';
 
 export default function CurriculumScreen() {
-  const [subjects, setSubjects] = useState([]);
-  const [activeId, setActiveId] = useState(null);
-  const [currentStdMap, setCurrentStdMap] = useState({});
+  // Everything below is live: add a subject, import standards, tweak the
+  // "current standard" from the Now screen… and this screen follows along.
+  const subjects = useLiveQuery(() => subjectRepo.all(), [], []);
+  const currentStdMap = useLiveQuery(
+    () => settings.get('currentStandardBySubject', {}),
+    [],
+    {}
+  );
+  const stats = useLiveQuery(async () => {
+    const out = {};
+    for (const sub of await subjectRepo.all()) out[sub.id] = await subjectStats(sub.id);
+    return out;
+  }, [], {});
+
+  const [pickedId, setActiveId] = useState(null);
+  const activeId = subjects.some(s => s.id === pickedId) ? pickedId : subjects[0]?.id ?? null;
   const [editingSubject, setEditingSubject] = useState(null);
   const [bulkOpen, setBulkOpen] = useState(false);
-  const [stats, setStats] = useState({});
-  const [treeKey, setTreeKey] = useState(0);
-
-  async function reload() {
-    const list = await subjectRepo.all();
-    setSubjects(list);
-    setActiveId(prev => (prev && list.some(s => s.id === prev) ? prev : list[0]?.id || null));
-
-    const map = await settings.get('currentStandardBySubject', {});
-    setCurrentStdMap(map);
-
-    const s = {};
-    for (const sub of list) s[sub.id] = await subjectStats(sub.id);
-    setStats(s);
-    setTreeKey(k => k + 1);
-  }
-
-  useEffect(() => { reload(); }, []);
 
   const active = subjects.find(s => s.id === activeId) || null;
 
@@ -104,14 +100,10 @@ export default function CurriculumScreen() {
             </div>
 
             <SubjectTree
-              key={`${active.id}-${treeKey}`}
+              key={active.id}
               subject={active}
               currentStandardId={currentStdMap[active.id]}
-              onSetCurrent={async (stdId) => {
-                await settings.setCurrentStandard(active.id, stdId);
-                setCurrentStdMap(prev => ({ ...prev, [active.id]: stdId }));
-              }}
-              onChanged={reload}
+              onSetCurrent={(stdId) => settings.setCurrentStandard(active.id, stdId)}
             />
           </>
         ) : (
@@ -123,7 +115,6 @@ export default function CurriculumScreen() {
         <SubjectEditor
           subject={editingSubject.isNew ? null : editingSubject}
           onClose={() => setEditingSubject(null)}
-          onSaved={reload}
         />
       )}
 
@@ -131,10 +122,7 @@ export default function CurriculumScreen() {
         <BulkImportModal
           subject={active}
           onClose={() => setBulkOpen(false)}
-          onImported={() => {
-            setBulkOpen(false);
-            reload();
-          }}
+          onImported={() => setBulkOpen(false)}
         />
       )}
     </div>
