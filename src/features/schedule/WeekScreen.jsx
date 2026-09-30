@@ -2,6 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { loadWeek, ensureLessonFor } from '../../db/schedule';
+import { savePrefs } from '../../db/settings';
+import { usePrefs } from '../../hooks/usePrefs';
 import {
   startOfWeek,
   addWeeks,
@@ -14,19 +16,25 @@ import DayList from './DayList';
 import SlotEditor from './SlotEditor';
 
 const EMPTY = [];
-const STORAGE_KEY = 'week:includeWeekend';
 
 export default function WeekScreen() {
   const [search, setSearch] = useSearchParams();
   const navigate = useNavigate();
 
-  const [weekStart, setWeekStart] = useState(() => {
+  // "Show weekends" and "Week starts on" come from Settings → Preferences (live).
+  const prefs = usePrefs();
+  const includeWeekend = prefs?.includeWeekend ?? false;
+  const weekStartsOn = prefs?.weekStartsOn ?? 1;
+
+  // Remember any date inside the shown week, not the week's first day, so changing
+  // "Week starts on" re-slices the same week instead of jumping elsewhere.
+  const [anchor, setAnchor] = useState(() => {
     const param = search.get('week');
-    return startOfWeek(param ? new Date(param + 'T00:00:00') : new Date());
+    return param ? new Date(param + 'T00:00:00') : new Date();
   });
-  const [includeWeekend, setIncludeWeekend] = useState(
-    () => localStorage.getItem(STORAGE_KEY) === '1'
-  );
+  const anchorKey = toDateKey(anchor);
+  const weekStart = startOfWeek(anchor, weekStartsOn);
+  const weekKey = toDateKey(weekStart);
   const [view, setView] = useState(() => {
     return window.matchMedia('(min-width: 768px)').matches ? 'grid' : 'list';
   });
@@ -42,24 +50,20 @@ export default function WeekScreen() {
   }, []);
 
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, includeWeekend ? '1' : '0');
-  }, [includeWeekend]);
-
-  useEffect(() => {
-    const key = toDateKey(weekStart);
-    if (search.get('week') !== key) setSearch({ week: key }, { replace: true });
-  }, [weekStart, search, setSearch]);
+    // The URL holds a date inside the shown week, so a reload or shared link
+    // lands on the same week whichever day the week starts on.
+    if (search.get('week') !== anchorKey) setSearch({ week: anchorKey }, { replace: true });
+  }, [anchorKey, search, setSearch]);
 
   // Live: editing a slot, completing a lesson or restoring a backup refreshes the grid.
-  const weekKey = toDateKey(weekStart);
   const data = useLiveQuery(
-    () => loadWeek(weekStart, { includeWeekend }),
-    [weekKey, includeWeekend]
+    () => (prefs ? loadWeek(weekStart, { includeWeekend, weekStartsOn }) : undefined),
+    [weekKey, includeWeekend, weekStartsOn, !!prefs]
   );
   const subjectsList = useLiveQuery(() => subjectRepo.all(), [], EMPTY);
   const loading = data === undefined;
 
-  const isThisWeek = isSameWeek(weekStart, now);
+  const isThisWeek = isSameWeek(weekStart, now, weekStartsOn);
 
   const openSlot = async (slot, date) => {
     if (editMode) {
@@ -82,21 +86,21 @@ export default function WeekScreen() {
 
             <div className="flex items-center gap-1">
               <button
-                onClick={() => setWeekStart(w => addWeeks(w, -1))}
+                onClick={() => setAnchor(a => addWeeks(a, -1))}
                 className="w-9 h-9 rounded-lg border border-slate-200 flex items-center justify-center hover:bg-slate-50 print:hidden"
               >
                 ◀
               </button>
               <div className="px-3 text-center min-w-[180px]">
                 <div className="text-sm font-semibold text-slate-900">
-                  {formatWeekRange(weekStart, { includeWeekend })}
+                  {formatWeekRange(weekStart, { includeWeekend, weekStartsOn })}
                 </div>
                 <div className="text-[10px] text-slate-400 uppercase tracking-wider">
                   {isThisWeek ? 'This week' : 'Week'}
                 </div>
               </div>
               <button
-                onClick={() => setWeekStart(w => addWeeks(w, 1))}
+                onClick={() => setAnchor(a => addWeeks(a, 1))}
                 className="w-9 h-9 rounded-lg border border-slate-200 flex items-center justify-center hover:bg-slate-50 print:hidden"
               >
                 ▶
@@ -105,7 +109,7 @@ export default function WeekScreen() {
 
             <div className="flex gap-1.5 print:hidden">
               <button
-                onClick={() => setWeekStart(startOfWeek(new Date()))}
+                onClick={() => setAnchor(new Date())}
                 disabled={isThisWeek}
                 className="text-xs px-3 py-1.5 rounded-lg border border-slate-200 disabled:opacity-40"
               >
@@ -154,7 +158,7 @@ export default function WeekScreen() {
               <input
                 type="checkbox"
                 checked={includeWeekend}
-                onChange={(e) => setIncludeWeekend(e.target.checked)}
+                onChange={(e) => savePrefs({ includeWeekend: e.target.checked })}
               />
               Include weekend
             </label>

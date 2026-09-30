@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { startOfWeek, weekDays, addWeeks, dayIndex, hhmmToMin } from '../src/lib/week';
+import { startOfWeek, weekDays, addWeeks, dayIndex, hhmmToMin, isSameWeek, formatWeekRange } from '../src/lib/week';
 import { toDateKey } from '../src/db/helpers';
 
 describe('week helpers', () => {
@@ -32,5 +32,30 @@ describe('week helpers', () => {
   it('parses HH:MM', () => {
     expect(hhmmToMin('08:40')).toBe(520);
     expect(hhmmToMin('')).toBe(0);
+  });
+
+  it('Sunday-start weeks: Sun–Sat with weekends, Mon–Fri without', () => {
+    const ws = startOfWeek(new Date(2026, 8, 30), 0); // Sun 27 Sep
+    const keys = (days) => days.map(toDateKey);
+    expect(keys(weekDays(ws, { includeWeekend: true, weekStartsOn: 0 }))).toEqual([
+      '2026-09-27', '2026-09-28', '2026-09-29', '2026-09-30', '2026-10-01', '2026-10-02', '2026-10-03',
+    ]);
+    expect(keys(weekDays(ws, { weekStartsOn: 0 }))).toEqual([
+      '2026-09-28', '2026-09-29', '2026-09-30', '2026-10-01', '2026-10-02',
+    ]);
+  });
+
+  it('isSameWeek respects the week start (Sunday belongs to the next week only when Sunday starts it)', () => {
+    const sun = new Date(2026, 9, 4);
+    const fri = new Date(2026, 9, 2);
+    expect(isSameWeek(sun, fri)).toBe(true);        // Mon-start: Sun closes the week
+    expect(isSameWeek(sun, fri, 0)).toBe(false);    // Sun-start: Sun opens the next one
+  });
+
+  it('formats the range from the days actually shown', () => {
+    const ws = startOfWeek(new Date(2026, 8, 30), 0);
+    expect(formatWeekRange(ws, { weekStartsOn: 0 })).toMatch(/28/);
+    expect(formatWeekRange(ws, { weekStartsOn: 0 })).not.toMatch(/\b27\b/);
+    expect(formatWeekRange(ws, { includeWeekend: true, weekStartsOn: 0 })).toMatch(/\b27\b/);
   });
 });

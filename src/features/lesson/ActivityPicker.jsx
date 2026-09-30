@@ -2,12 +2,16 @@ import React, { useState } from 'react';
 import { activityRepo } from '../../db/helpers';
 import { ACTIVITY_TYPES } from '../../db/schema';
 import { ACTIVITY_META } from '../../lib/activityMeta';
+import { usePrefs, DEFAULT_PREFS } from '../../hooks/usePrefs';
 
 export default function ActivityPicker({ lessonId, onClose, onAdded }) {
   const [type, setType] = useState(null);
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
-  const [duration, setDuration] = useState(10);
+  // `null` = not edited, so the field follows Settings → Default activity length.
+  const prefs = usePrefs();
+  const defaultMin = prefs?.defaultActivityMinutes ?? DEFAULT_PREFS.defaultActivityMinutes;
+  const [duration, setDuration] = useState(null);
   const [saving, setSaving] = useState(false);
 
   const save = async () => {
@@ -18,7 +22,7 @@ export default function ActivityPicker({ lessonId, onClose, onAdded }) {
       type,
       title: title.trim() || ACTIVITY_META[type].label,
       content: content.trim(),
-      duration: Number(duration) || 10,
+      duration: Number(duration ?? defaultMin) || defaultMin,
       done: false,
     });
     setSaving(false);
@@ -88,7 +92,7 @@ export default function ActivityPicker({ lessonId, onClose, onAdded }) {
               type="number"
               min={1}
               max={120}
-              value={duration}
+              value={duration ?? defaultMin}
               onChange={(e) => setDuration(e.target.value)}
               className="w-24 border border-slate-300 rounded-lg px-3 py-2 text-sm mb-4 mt-1"
             />

@@ -3,12 +3,16 @@ import { activityRepo } from '../../db/helpers';
 import { ACTIVITY_TYPES } from '../../db/schema';
 import { toast } from '../../lib/dialogs';
 import { ACTIVITY_META } from '../../lib/activityMeta';
+import { usePrefs, DEFAULT_PREFS } from '../../hooks/usePrefs';
 
 export default function ActivityPromptBar({ lessonId, standard, onOpenTemplates }) {
   const [openType, setOpenType] = useState(null);
   const [title, setTitle] = useState('');
   const [draft, setDraft] = useState('');
-  const [duration, setDuration] = useState(10);
+  // `null` = not edited, so the field follows Settings → Default activity length.
+  const prefs = usePrefs();
+  const defaultMin = prefs?.defaultActivityMinutes ?? DEFAULT_PREFS.defaultActivityMinutes;
+  const [duration, setDuration] = useState(null);
 
   const open = (type) => {
     const meta = ACTIVITY_META[type];
@@ -18,7 +22,7 @@ export default function ActivityPromptBar({ lessonId, standard, onOpenTemplates 
       ? `${standard.exemplars[0]}`
       : '';
     setDraft(exemplarHint);
-    setDuration(10);
+    setDuration(null);
   };
 
   const save = async () => {
@@ -29,7 +33,7 @@ export default function ActivityPromptBar({ lessonId, standard, onOpenTemplates 
       type: openType,
       title: title.trim() || meta.defaultTitle,
       content: draft.trim(),
-      duration: Number(duration) || 10,
+      duration: Number(duration ?? defaultMin) || defaultMin,
       done: false,
     };
     await activityRepo.add(payload);
@@ -104,7 +108,7 @@ export default function ActivityPromptBar({ lessonId, standard, onOpenTemplates 
               type="number"
               min={1}
               max={120}
-              value={duration}
+              value={duration ?? defaultMin}
               onChange={(e) => setDuration(Number(e.target.value))}
               className="w-20 rounded-lg border border-slate-300 px-2 py-1 text-sm"
             />

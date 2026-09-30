@@ -35,8 +35,8 @@ export async function resolveStandardForSubject(subjectId) {
  * - subjects keyed by id
  * - existing lessons for the date range keyed by `${timetableId}:${date}`
  */
-export async function loadWeek(weekStart, { includeWeekend = false } = {}) {
-  const days = weekDays(weekStart, { includeWeekend });
+export async function loadWeek(weekStart, { includeWeekend = false, weekStartsOn = 1 } = {}) {
+  const days = weekDays(weekStart, { includeWeekend, weekStartsOn });
 
   const dayNumbers = days.map(d => {
     const g = d.getDay();      // 0..6 (Sun=0)

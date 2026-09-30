@@ -38,6 +38,9 @@ On first launch a short **onboarding wizard** asks for your name, school, class,
 ### Live data
 Screens read IndexedDB through Dexie live queries (`useLiveQuery`), so anything written from another screen, tab or a backup import shows up without a reload. Writes never happen inside a live-query function; creating "today's lesson" for the Now screen happens in an effect (`src/db/now.js`).
 
+### Preferences
+Settings → Preferences drives real behaviour: **Week starts on** and **Show weekends** shape the Week screen (the screen's own "Include weekend" checkbox writes the same preference; an old per-browser toggle is migrated once), **Default activity length** pre-fills the quick-add forms, and **Reminder before class** drives reminders. Read them with `usePrefs()`; write partial updates with `savePrefs(patch)` (`src/db/settings.js`).
+
 ### Class reminders
 **Settings → Preferences → Reminder before class** sets the lead time in minutes (default 5; `0` switches reminders off). `ClassReminders` (mounted in `App`) checks today's slots every 10 s and shows a toast with an *Open* action plus a chime when the window is focused; if the window is hidden or unfocused it sends a system notification instead, once you press **Enable** under *Notifications* (per device). Each reminder fires once per class per day (tracked in `localStorage` key `tc-reminded`, shared between tabs). The pure logic lives in `src/lib/reminders.js`.
 

@@ -65,3 +65,25 @@ export async function resetSettings() {
   await saveSettings(getDefaultSettings());
   if (onboarded) await db.settings.put(onboarded);
 }
+
+/** Merge a partial update into the stored preferences (other keys are left alone). */
+export async function savePrefs(patch) {
+  const { prefs } = await getSettings();
+  await saveSettings({ prefs: { ...prefs, ...patch } });
+}
+
+/**
+ * "Show weekends" used to be a per-browser toggle on the Week screen
+ * (localStorage `week:includeWeekend`). It is a normal preference now; carry an
+ * existing "on" over once, then drop the old key.
+ */
+export async function migrateLegacyWeekendPref(storage = globalThis.localStorage) {
+  try {
+    const legacy = storage?.getItem('week:includeWeekend');
+    if (legacy == null) return;
+    if (legacy === '1') await savePrefs({ includeWeekend: true });
+    storage.removeItem('week:includeWeekend');
+  } catch {
+    /* storage unavailable — nothing to migrate */
+  }
+}

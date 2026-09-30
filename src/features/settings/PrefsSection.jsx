@@ -10,7 +10,7 @@ export default function PrefsSection({ prefs, onChange }) {
         ⚙️ Preferences
       </h2>
 
-      <Row label="Week starts on">
+      <Row label="Week starts on" hint="Sunday-start weeks list Mon–Fri unless weekends are shown">
         <select
           value={prefs.weekStartsOn}
           onChange={(e) => set({ weekStartsOn: Number(e.target.value) })}
@@ -21,7 +21,7 @@ export default function PrefsSection({ prefs, onChange }) {
         </select>
       </Row>
 
-      <Row label="Show weekends">
+      <Row label="Show weekends" hint="Week screen shows Sat and Sun">
         <input
           type="checkbox"
           checked={prefs.includeWeekend}
@@ -30,7 +30,7 @@ export default function PrefsSection({ prefs, onChange }) {
         />
       </Row>
 
-      <Row label="Default activity length">
+      <Row label="Default activity length" hint="Pre-filled when you add an activity">
         <div className="flex items-center gap-1">
           <input
             type="number"
