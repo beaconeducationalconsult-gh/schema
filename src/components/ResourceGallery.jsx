@@ -75,12 +75,12 @@ export default function ResourceGallery({
                 onKeyDown={(e) => e.key === 'Enter' && setLightboxIdx(idx)}
                 className={`group cursor-pointer rounded-xl border overflow-hidden transition flex flex-col ${
                   dark
-                    ? 'bg-slate-800/90 border-white/15 hover:border-sky-400'
+                    ? 'bg-zinc-800/90 border-white/15 hover:border-sky-400'
                     : 'bg-slate-50 border-slate-200 hover:border-slate-400 hover:shadow-sm'
                 }`}
               >
                 {isImage ? (
-                  <div className="h-32 bg-slate-900 flex items-center justify-center overflow-hidden relative">
+                  <div className="h-32 bg-zinc-900 flex items-center justify-center overflow-hidden relative">
                     <img
                       src={res.url}
                       alt={res.caption || 'Teaching diagram'}
@@ -93,7 +93,7 @@ export default function ResourceGallery({
                 ) : (
                   <div
                     className={`p-3 flex items-center gap-2.5 ${
-                      dark ? 'bg-slate-800' : 'bg-white'
+                      dark ? 'bg-zinc-800' : 'bg-surface'
                     }`}
                   >
                     <span className="text-2xl">{meta.icon}</span>
@@ -162,10 +162,10 @@ export default function ResourceGallery({
               <img
                 src={activeRes.url}
                 alt={activeRes.caption || 'Diagram'}
-                className="max-h-[75vh] max-w-full object-contain rounded-xl shadow-2xl bg-slate-900"
+                className="max-h-[75vh] max-w-full object-contain rounded-xl shadow-2xl bg-zinc-900"
               />
             ) : (
-              <div className="bg-slate-800 text-white rounded-2xl p-8 max-w-lg w-full text-center border border-white/15">
+              <div className="bg-zinc-800 text-white rounded-2xl p-8 max-w-lg w-full text-center border border-white/15">
                 <div className="text-5xl mb-3">
                   {TYPE_BADGE[activeRes.type]?.icon || '🔗'}
                 </div>

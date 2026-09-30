@@ -13,7 +13,7 @@ export default function LessonRow({ row }) {
   const { lesson, slot, subject, standard, activities, notes, totalMin, doneCount } = row;
 
   return (
-    <li className="bg-white rounded-2xl border border-slate-200 hover:border-slate-300 transition shadow-sm">
+    <li className="bg-surface rounded-2xl border border-slate-200 hover:border-slate-300 transition shadow-sm">
       <Link to={`/lesson/${lesson.id}`} className="block p-4">
         <div className="flex items-start gap-3">
           <span

@@ -66,7 +66,7 @@ export default function BackupSection({ onImported }) {
   };
 
   return (
-    <section className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
+    <section className="bg-surface rounded-2xl border border-slate-200 p-5 shadow-sm">
       <h2 className="text-sm font-semibold text-slate-700 uppercase tracking-wide mb-1">
         💾 Backup & Restore
       </h2>
@@ -78,7 +78,7 @@ export default function BackupSection({ onImported }) {
       <button
         onClick={doExport}
         disabled={busy}
-        className="w-full py-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-sm font-medium disabled:opacity-40 mb-3"
+        className="w-full py-3 rounded-xl bg-primary hover:bg-primary-hover text-on-primary text-sm font-medium disabled:opacity-40 mb-3"
       >
         ⬇ Export backup (.json)
       </button>

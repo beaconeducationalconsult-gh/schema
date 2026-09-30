@@ -33,7 +33,7 @@ export default function ActivityBlock({ activity, index, onMoveUp, onMoveDown })
 
   return (
     <div
-      className={`bg-white rounded-2xl border shadow-sm ${
+      className={`bg-surface rounded-2xl border shadow-sm ${
         done ? 'border-emerald-200 bg-emerald-50/30 opacity-80' : 'border-slate-200'
       } p-4 print:break-inside-avoid`}
     >
@@ -82,7 +82,7 @@ export default function ActivityBlock({ activity, index, onMoveUp, onMoveDown })
               <div className="flex gap-2">
                 <button
                   onClick={save}
-                  className="px-3 py-1.5 text-xs rounded-lg bg-slate-900 text-white"
+                  className="px-3 py-1.5 text-xs rounded-lg bg-primary text-on-primary"
                 >
                   Save
                 </button>

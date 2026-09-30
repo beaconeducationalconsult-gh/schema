@@ -19,7 +19,7 @@ export default function AppNav() {
   }
 
   return (
-    <nav aria-label="Primary" className="pb-[env(safe-area-inset-bottom)] fixed bottom-0 inset-x-0 z-30 bg-white/95 backdrop-blur border-t border-slate-200 print:hidden">
+    <nav aria-label="Primary" className="pb-[env(safe-area-inset-bottom)] fixed bottom-0 inset-x-0 z-30 bg-surface/95 backdrop-blur border-t border-slate-200 print:hidden">
       <div className="max-w-3xl mx-auto grid grid-cols-6">
         {items.map(i => (
           <NavLink
@@ -39,7 +39,7 @@ export default function AppNav() {
                 <span
                   aria-hidden="true"
                   className={`absolute top-0 h-0.5 w-8 rounded-full transition ${
-                    isActive ? 'bg-slate-900' : 'bg-transparent'
+                    isActive ? 'bg-primary' : 'bg-transparent'
                   }`}
                 />
                 <i.Icon size={20} strokeWidth={isActive ? 2.4 : 1.8} aria-hidden="true" />

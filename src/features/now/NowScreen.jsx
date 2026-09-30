@@ -76,7 +76,7 @@ export const ACTIVITY_META = {
   assignment: {
     label: 'Assignment',
     emoji: '📝',
-    color: 'bg-slate-700 hover:bg-slate-800',
+    color: 'bg-zinc-600 hover:bg-zinc-700',
     ring: 'ring-slate-500',
     placeholder: 'Home assignment details…',
     defaultTitle: 'Home Assignment',
@@ -321,7 +321,7 @@ function StatusBanner({
         : '';
 
   return (
-    <div className={`sticky top-0 z-20 bg-gradient-to-r ${tone} text-white shadow-md`}>
+    <div className={`palette-fixed sticky top-0 z-20 bg-gradient-to-r ${tone} text-white shadow-md`}>
       <div className="max-w-3xl mx-auto px-4 py-3">
         <div className="flex items-center justify-between gap-2">
           <div>
@@ -373,7 +373,7 @@ function StatusBanner({
 function ClassCard({ slot, subject, lesson, isPreviewMode, onCompleteLesson }) {
   return (
     <section className="max-w-3xl mx-auto px-4 pt-4">
-      <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-5">
+      <div className="bg-surface rounded-2xl shadow-sm border border-slate-200 p-5">
         <div className="flex items-center gap-3">
           <span
             className="w-3 h-14 rounded-full shrink-0"
@@ -408,7 +408,7 @@ function ClassCard({ slot, subject, lesson, isPreviewMode, onCompleteLesson }) {
             <div className="hidden sm:flex flex-col gap-1.5 shrink-0">
               <Link
                 to={`/lesson/${lesson.id}`}
-                className="px-3.5 py-2 rounded-xl bg-slate-900 text-white text-xs font-medium text-center hover:bg-slate-800"
+                className="px-3.5 py-2 rounded-xl bg-primary text-on-primary text-xs font-medium text-center hover:bg-primary-hover"
               >
                 Open Lesson Plan
               </Link>
@@ -449,7 +449,7 @@ function CurriculumCard({
 }) {
   return (
     <section className="max-w-3xl mx-auto px-4 pt-3">
-      <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-5">
+      <div className="bg-surface rounded-2xl shadow-sm border border-slate-200 p-5">
         <div className="flex items-center justify-between gap-2 mb-3">
           <div className="flex items-center gap-2 text-xs font-semibold text-slate-500 uppercase tracking-wide">
             <span>📚 What I'm Teaching</span>
@@ -584,7 +584,7 @@ function ActivityPromptBar({ lessonId, standard, onOpenTemplates }) {
 
   return (
     <section className="max-w-3xl mx-auto px-4 pt-3">
-      <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-5">
+      <div className="bg-surface rounded-2xl shadow-sm border border-slate-200 p-5">
         <div className="flex items-center justify-between gap-2 mb-3">
           <div className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
             🎯 How I'm Teaching — Quick Prompt Bar
@@ -666,7 +666,7 @@ function ActivityPromptBar({ lessonId, standard, onOpenTemplates }) {
             <button
               onClick={save}
               disabled={!draft.trim() && !title.trim()}
-              className="px-4 py-2 text-sm rounded-lg bg-slate-900 text-white disabled:opacity-40"
+              className="px-4 py-2 text-sm rounded-lg bg-primary text-on-primary disabled:opacity-40"
             >
               Save Activity
             </button>
@@ -686,7 +686,7 @@ function ActivityFeed({ items, lessonId, onToggleDone, onCompleteLesson }) {
 
   return (
     <section className="max-w-3xl mx-auto px-4 pt-3">
-      <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-5">
+      <div className="bg-surface rounded-2xl shadow-sm border border-slate-200 p-5">
         <div className="flex items-center justify-between mb-3">
           <div className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
             📋 Lesson Activities ({doneCount}/{items.length} done · {totalMin} min)
@@ -729,7 +729,7 @@ function ActivityFeed({ items, lessonId, onToggleDone, onCompleteLesson }) {
                     className={`w-6 h-6 rounded-full flex items-center justify-center text-xs mt-0.5 border shrink-0 ${
                       a.done
                         ? 'bg-emerald-600 border-emerald-600 text-white'
-                        : 'bg-white border-slate-300 text-transparent hover:border-slate-500'
+                        : 'bg-surface border-slate-300 text-transparent hover:border-slate-500'
                     }`}
                   >
                     ✓
@@ -785,7 +785,7 @@ function NotesStrip({ lesson, notes }) {
 
   return (
     <section className="max-w-3xl mx-auto px-4 pt-3">
-      <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-5">
+      <div className="bg-surface rounded-2xl shadow-sm border border-slate-200 p-5">
         <div className="flex items-center justify-between mb-2">
           <div className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
             📝 Quick Lesson Notes
@@ -803,7 +803,7 @@ function NotesStrip({ lesson, notes }) {
               onClick={() => setTag(t)}
               className={`text-[10px] px-2 py-0.5 rounded-full border ${
                 tag === t
-                  ? 'bg-slate-900 text-white border-slate-900'
+                  ? 'bg-primary text-on-primary border-primary'
                   : 'bg-slate-50 text-slate-500 border-slate-200'
               }`}
             >
@@ -823,7 +823,7 @@ function NotesStrip({ lesson, notes }) {
           <button
             onClick={save}
             disabled={!text.trim() || saving}
-            className="px-4 py-2 rounded-lg bg-slate-900 text-white text-sm font-medium disabled:opacity-40"
+            className="px-4 py-2 rounded-lg bg-primary text-on-primary text-sm font-medium disabled:opacity-40"
           >
             Add
           </button>
@@ -860,7 +860,7 @@ function LessonActions({ lesson, onCompleteLesson }) {
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
         <Link
           to={`/lesson/${lesson.id}`}
-          className="text-center py-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-medium text-sm shadow-sm"
+          className="text-center py-3 rounded-xl bg-primary hover:bg-primary-hover text-on-primary font-medium text-sm shadow-sm"
         >
           Open Lesson Plan
         </Link>
@@ -892,7 +892,7 @@ function Modal({ children, onClose }) {
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="bg-white w-full sm:max-w-lg rounded-t-2xl sm:rounded-2xl p-5 shadow-xl"
+        className="bg-surface w-full sm:max-w-lg rounded-t-2xl sm:rounded-2xl p-5 shadow-xl"
       >
         {children}
       </div>
@@ -903,9 +903,9 @@ function Modal({ children, onClose }) {
 function ContextSkeleton() {
   return (
     <div className="max-w-3xl mx-auto px-4 pt-4 space-y-3 animate-pulse">
-      <div className="h-24 bg-white rounded-2xl" />
-      <div className="h-56 bg-white rounded-2xl" />
-      <div className="h-32 bg-white rounded-2xl" />
+      <div className="h-24 bg-surface rounded-2xl" />
+      <div className="h-56 bg-surface rounded-2xl" />
+      <div className="h-32 bg-surface rounded-2xl" />
     </div>
   );
 }

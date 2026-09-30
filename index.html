@@ -14,6 +14,19 @@
     <meta name="theme-color" content="#0f172a" media="(prefers-color-scheme: light)" />
     <meta name="theme-color" content="#0f172a" media="(prefers-color-scheme: dark)" />
 
+    <!-- Apply saved theme before first paint (no light flash in dark mode). Keep in sync with src/lib/theme.js -->
+    <script>
+      (function () {
+        try {
+          var t = localStorage.getItem('tc-theme') || 'system';
+          var dark = t === 'dark' || (t === 'system' && matchMedia('(prefers-color-scheme: dark)').matches);
+          var r = document.documentElement;
+          if (dark) r.classList.add('dark');
+          if (localStorage.getItem('tc-projector') === '1') r.classList.add('projector');
+        } catch (e) {}
+      })();
+    </script>
+
     <title>Schema Teaching Companion</title>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="icon" type="image/png" href="/icons/icon-192.png" />

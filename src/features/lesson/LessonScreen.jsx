@@ -26,7 +26,7 @@ export const ACTIVITY_META = {
   video:              { label: 'Video',          emoji: '🎬', color: 'bg-rose-600' },
   reading:            { label: 'Reading',        emoji: '📖', color: 'bg-amber-600' },
   discussion:         { label: 'Discussion',     emoji: '💬', color: 'bg-cyan-600' },
-  assignment:         { label: 'Assignment',     emoji: '📝', color: 'bg-slate-700' },
+  assignment:         { label: 'Assignment',     emoji: '📝', color: 'bg-zinc-600' },
 };
 
 export default function LessonScreen() {
@@ -85,7 +85,7 @@ export default function LessonScreen() {
     <div className="min-h-screen bg-slate-50 pb-28 print:bg-white">
       <PrintHeader data={data} />
 
-      <header className="bg-white border-b border-slate-200 sticky top-0 z-10 print:hidden">
+      <header className="bg-surface border-b border-slate-200 sticky top-0 z-10 print:hidden">
         <div className="max-w-3xl mx-auto px-4 py-3 flex items-center justify-between gap-2 flex-wrap">
           <Link to="/" className="text-sm text-slate-600 hover:text-slate-900 font-medium">
             ← Now
@@ -105,7 +105,7 @@ export default function LessonScreen() {
             </button>
             <button
               onClick={() => setPickerOpen(true)}
-              className="px-3 py-1.5 text-xs sm:text-sm rounded-lg bg-slate-900 text-white font-medium"
+              className="px-3 py-1.5 text-xs sm:text-sm rounded-lg bg-primary text-on-primary font-medium"
             >
               + Activity
             </button>
@@ -154,7 +154,7 @@ export default function LessonScreen() {
                   if (!e.target.value) return;
                   await lessonsFull.update(lesson.id, { standardId: Number(e.target.value) });
                 }}
-                className="text-xs border border-amber-300 rounded-lg px-2 py-1 bg-white text-slate-800"
+                className="text-xs border border-amber-300 rounded-lg px-2 py-1 bg-surface text-slate-800"
               >
                 <option value="">Link a standard…</option>
                 {allStandards.map(s => (
@@ -265,7 +265,7 @@ export default function LessonScreen() {
 
 function LessonHeader({ lesson, slot, subject, date, onUpdate }) {
   return (
-    <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
+    <div className="bg-surface rounded-2xl border border-slate-200 p-5 shadow-sm">
       <div className="flex items-start gap-3">
         <span
           className="w-2 h-14 rounded-full shrink-0"
@@ -288,7 +288,7 @@ function LessonHeader({ lesson, slot, subject, date, onUpdate }) {
         <select
           value={lesson.status || 'planned'}
           onChange={(e) => onUpdate({ status: e.target.value })}
-          className="text-xs border border-slate-300 rounded-lg px-2.5 py-1.5 bg-white font-medium print:hidden"
+          className="text-xs border border-slate-300 rounded-lg px-2.5 py-1.5 bg-surface font-medium print:hidden"
         >
           <option value="planned">Planned</option>
           <option value="in_progress">In progress</option>
@@ -312,7 +312,7 @@ function StandardCard({
   onManageMedia,
 }) {
   return (
-    <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
+    <div className="bg-surface rounded-2xl border border-slate-200 p-5 shadow-sm">
       <div className="flex items-center justify-between mb-3 print:hidden">
         <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
           📚 Curriculum Standard
@@ -448,7 +448,7 @@ function NotesPanel({ lessonId, standardId, notes }) {
   };
 
   return (
-    <section className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
+    <section className="bg-surface rounded-2xl border border-slate-200 p-5 shadow-sm">
       <div className="flex items-center justify-between mb-2">
         <div className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
           📝 Lesson Notes
@@ -465,7 +465,7 @@ function NotesPanel({ lessonId, standardId, notes }) {
             onClick={() => setTag(t)}
             className={`text-[10px] px-2 py-0.5 rounded-full border ${
               tag === t
-                ? 'bg-slate-900 text-white border-slate-900'
+                ? 'bg-primary text-on-primary border-primary'
                 : 'bg-slate-50 text-slate-500 border-slate-200'
             }`}
           >
@@ -483,7 +483,7 @@ function NotesPanel({ lessonId, standardId, notes }) {
         />
         <button
           onClick={save}
-          className="px-4 py-2 text-sm rounded-lg bg-slate-900 text-white"
+          className="px-4 py-2 text-sm rounded-lg bg-primary text-on-primary"
         >
           Add
         </button>
@@ -519,7 +519,7 @@ function NotesPanel({ lessonId, standardId, notes }) {
 
 function EmptyActivities({ onAdd, onLoadRoutine }) {
   return (
-    <div className="bg-white rounded-2xl border border-dashed border-slate-300 p-8 text-center">
+    <div className="bg-surface rounded-2xl border border-dashed border-slate-300 p-8 text-center">
       <div className="text-4xl mb-2">🎯</div>
       <p className="text-sm text-slate-600 mb-4">No teaching moves yet for this lesson.</p>
       <div className="flex flex-wrap justify-center gap-2">
@@ -531,7 +531,7 @@ function EmptyActivities({ onAdd, onLoadRoutine }) {
         </button>
         <button
           onClick={onAdd}
-          className="px-4 py-2 rounded-lg bg-slate-900 text-white text-sm font-medium"
+          className="px-4 py-2 rounded-lg bg-primary text-on-primary text-sm font-medium"
         >
           + Add Custom Activity
         </button>
@@ -571,7 +571,7 @@ function StandardQuickEdit({ standard, onClose, onSaved }) {
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="bg-white w-full sm:max-w-lg rounded-t-2xl sm:rounded-2xl p-5 shadow-xl"
+        className="bg-surface w-full sm:max-w-lg rounded-t-2xl sm:rounded-2xl p-5 shadow-xl"
       >
         <h3 className="text-lg font-semibold mb-4">Quick edit standard</h3>
         <label className="text-xs text-slate-500 uppercase font-semibold">
@@ -601,7 +601,7 @@ function StandardQuickEdit({ standard, onClose, onSaved }) {
           </button>
           <button
             onClick={save}
-            className="px-4 py-2 text-sm rounded-lg bg-slate-900 text-white"
+            className="px-4 py-2 text-sm rounded-lg bg-primary text-on-primary"
           >
             Save
           </button>

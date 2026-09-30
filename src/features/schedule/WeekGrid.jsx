@@ -22,7 +22,7 @@ export default function WeekGrid({ data, todayKey, editMode, onOpenSlot }) {
             <div
               key={key}
               className={`px-3 py-2 rounded-t-xl text-center ${
-                isToday ? 'bg-slate-900 text-white' : 'bg-white text-slate-700'
+                isToday ? 'bg-primary text-on-primary' : 'bg-surface text-slate-700'
               }`}
             >
               <div className="text-[10px] uppercase tracking-wider opacity-70">
@@ -44,7 +44,7 @@ export default function WeekGrid({ data, todayKey, editMode, onOpenSlot }) {
             <div
               key={key}
               className={`space-y-2 p-1.5 rounded-b-xl ${
-                isToday ? 'bg-slate-900/5 ring-1 ring-slate-900/10' : 'bg-white'
+                isToday ? 'bg-primary/5 ring-1 ring-primary/15' : 'bg-surface'
               }`}
             >
               {daySlots.length === 0 ? (
@@ -70,10 +70,10 @@ export default function WeekGrid({ data, todayKey, editMode, onOpenSlot }) {
                         editMode
                           ? 'border-amber-300 bg-amber-50/40 hover:border-amber-400'
                           : inProgress
-                            ? 'border-emerald-500 ring-2 ring-emerald-200 bg-white'
+                            ? 'border-emerald-500 ring-2 ring-emerald-200 bg-surface'
                             : past
                               ? 'border-slate-100 bg-slate-50 opacity-75'
-                              : 'border-slate-200 bg-white hover:border-slate-300'
+                              : 'border-slate-200 bg-surface hover:border-slate-300'
                       }`}
                     >
                       <div className="flex items-center gap-2">
@@ -100,7 +100,7 @@ export default function WeekGrid({ data, todayKey, editMode, onOpenSlot }) {
                             edit
                           </span>
                         ) : lesson ? (
-                          <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-slate-900 text-white">
+                          <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-primary text-on-primary">
                             lesson
                           </span>
                         ) : null}

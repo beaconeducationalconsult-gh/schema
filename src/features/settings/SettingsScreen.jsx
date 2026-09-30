@@ -6,6 +6,7 @@ import { resetToSeed } from '../../db/backup';
 import { confirmDialog, toast } from '../../lib/dialogs';
 import ProfileSection from './ProfileSection';
 import TermsSection from './TermsSection';
+import DisplaySection from './DisplaySection';
 import PrefsSection from './PrefsSection';
 import BackupSection from './BackupSection';
 import StorageSection from './StorageSection';
@@ -33,7 +34,7 @@ export default function SettingsScreen() {
 
   return (
     <div className="min-h-screen bg-slate-50 pb-28">
-      <header className="bg-white border-b border-slate-200 sticky top-0 z-10">
+      <header className="bg-surface border-b border-slate-200 sticky top-0 z-10">
         <div className="max-w-3xl mx-auto px-4 py-3 flex items-center justify-between">
           <Link to="/" className="text-sm text-slate-600 hover:text-slate-900 font-medium">
             ← Now
@@ -56,6 +57,8 @@ export default function SettingsScreen() {
           terms={settings.terms}
           onChange={(terms) => update({ terms })}
         />
+
+        <DisplaySection />
 
         <PrefsSection
           prefs={settings.prefs}
@@ -85,7 +88,7 @@ export default function SettingsScreen() {
 
       {dirty && (
         <div className="fixed bottom-20 inset-x-0 flex justify-center print:hidden z-30">
-          <div className="bg-slate-900 text-white text-sm px-4 py-2 rounded-full shadow-lg flex items-center gap-3">
+          <div className="bg-primary text-on-primary text-sm px-4 py-2 rounded-full shadow-lg flex items-center gap-3">
             <span>Unsaved changes</span>
             <button onClick={save} className="underline text-xs font-medium">
               Save now

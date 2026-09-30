@@ -48,7 +48,7 @@ export default function RoutineTemplateModal({
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="bg-white w-full sm:max-w-xl max-h-[90vh] overflow-y-auto rounded-t-2xl sm:rounded-2xl p-5 shadow-xl"
+        className="bg-surface w-full sm:max-w-xl max-h-[90vh] overflow-y-auto rounded-t-2xl sm:rounded-2xl p-5 shadow-xl"
       >
         <div className="flex items-start justify-between gap-2 mb-3">
           <div>
@@ -78,12 +78,12 @@ export default function RoutineTemplateModal({
                 className={`text-left p-3 rounded-xl border transition ${
                   active
                     ? 'border-blue-600 bg-blue-50/70 ring-1 ring-blue-600'
-                    : 'border-slate-200 hover:border-slate-300 bg-white'
+                    : 'border-slate-200 hover:border-slate-300 bg-surface'
                 }`}
               >
                 <div className="flex items-center justify-between gap-1">
                   <span className="text-xs font-bold text-slate-900">{tpl.name}</span>
-                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-900 text-white shrink-0">
+                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-primary text-on-primary shrink-0">
                     {tpl.badge}
                   </span>
                 </div>
@@ -102,7 +102,7 @@ export default function RoutineTemplateModal({
           </div>
           <ol className="space-y-2">
             {previewItems.map((item, i) => (
-              <li key={i} className="flex items-start gap-2.5 text-xs bg-white p-2.5 rounded-lg border border-slate-200/80">
+              <li key={i} className="flex items-start gap-2.5 text-xs bg-surface p-2.5 rounded-lg border border-slate-200/80">
                 <span className="text-base leading-none mt-0.5">
                   {EMOJI_MAP[item.type] || '📌'}
                 </span>

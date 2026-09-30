@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "./theme.css"; /* generated: dark palette, .palette-fixed, projector mode */
 
 /* Semantic colour tokens. Use these (not raw white/slate-900) for surfaces and
    primary buttons so dark mode can swap them. */

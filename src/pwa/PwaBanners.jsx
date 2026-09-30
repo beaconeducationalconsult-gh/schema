@@ -76,7 +76,7 @@ export default function PwaBanners() {
           <span className="flex-1">A new version is ready.</span>
           <button
             onClick={() => window.__pwaUpdate?.()}
-            className="ml-3 px-3 py-1.5 rounded-lg bg-white text-slate-900 text-xs font-medium"
+            className="ml-3 px-3 py-1.5 rounded-lg bg-surface text-slate-900 text-xs font-medium"
           >
             Reload
           </button>
@@ -126,7 +126,7 @@ export default function PwaBanners() {
           <span className="flex-1">Install Teaching Companion for home-screen access.</span>
           <button
             onClick={install}
-            className="ml-3 px-3 py-1.5 rounded-lg bg-white text-slate-900 text-xs font-medium"
+            className="ml-3 px-3 py-1.5 rounded-lg bg-surface text-slate-900 text-xs font-medium"
           >
             Install
           </button>
@@ -146,7 +146,7 @@ function Banner({ tone, children }) {
   const tones = {
     amber:   'bg-amber-100 text-amber-900 border-amber-200',
     emerald: 'bg-emerald-100 text-emerald-900 border-emerald-200',
-    slate:   'bg-slate-900 text-white border-slate-800',
+    slate:   'bg-primary text-on-primary border-slate-800',
     blue:    'bg-blue-600 text-white border-blue-700',
   };
   return (

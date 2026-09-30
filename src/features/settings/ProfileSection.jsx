@@ -16,7 +16,7 @@ export default function ProfileSection({ settings, onChange }) {
   );
 
   return (
-    <section className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
+    <section className="bg-surface rounded-2xl border border-slate-200 p-5 shadow-sm">
       <h2 className="text-sm font-semibold text-slate-700 uppercase tracking-wide mb-3">
         👤 Teacher Profile
       </h2>

@@ -12,7 +12,7 @@ export default function StorageSection() {
   const pct = usageBytes && quotaBytes ? (usageBytes / quotaBytes) * 100 : 0;
 
   return (
-    <section className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
+    <section className="bg-surface rounded-2xl border border-slate-200 p-5 shadow-sm">
       <h2 className="text-sm font-semibold text-slate-700 uppercase tracking-wide mb-3">
         📦 Local storage
       </h2>
@@ -34,7 +34,7 @@ export default function StorageSection() {
           </div>
           <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
             <div
-              className="h-full bg-slate-900"
+              className="h-full bg-primary"
               style={{ width: `${Math.min(100, pct)}%` }}
             />
           </div>

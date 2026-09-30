@@ -32,7 +32,7 @@ export default function ActivityPicker({ lessonId, onClose, onAdded }) {
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="bg-white w-full sm:max-w-lg max-h-[90vh] overflow-y-auto rounded-t-2xl sm:rounded-2xl p-5 shadow-xl"
+        className="bg-surface w-full sm:max-w-lg max-h-[90vh] overflow-y-auto rounded-t-2xl sm:rounded-2xl p-5 shadow-xl"
       >
         {!type ? (
           <>
@@ -103,7 +103,7 @@ export default function ActivityPicker({ lessonId, onClose, onAdded }) {
               <button
                 onClick={save}
                 disabled={saving}
-                className="px-4 py-2 text-sm rounded-lg bg-slate-900 text-white disabled:opacity-40"
+                className="px-4 py-2 text-sm rounded-lg bg-primary text-on-primary disabled:opacity-40"
               >
                 {saving ? 'Saving…' : 'Add activity'}
               </button>

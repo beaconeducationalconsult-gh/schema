@@ -3,7 +3,7 @@ import { CheckCircle2, AlertTriangle, Info, X } from 'lucide-react';
 import { dialogStore, dismissToast } from '../lib/dialogs';
 
 const TONES = {
-  info: { icon: Info, cls: 'bg-slate-900 text-white' },
+  info: { icon: Info, cls: 'bg-primary text-on-primary' },
   success: { icon: CheckCircle2, cls: 'bg-emerald-700 text-white' },
   error: { icon: AlertTriangle, cls: 'bg-rose-700 text-white' },
 };
@@ -29,7 +29,7 @@ function ConfirmModal({ dialog }) {
         role="alertdialog"
         aria-modal="true"
         aria-labelledby="confirm-title"
-        className="bg-white w-full sm:max-w-sm rounded-t-2xl sm:rounded-2xl p-5 shadow-xl"
+        className="bg-surface w-full sm:max-w-sm rounded-t-2xl sm:rounded-2xl p-5 shadow-xl"
         onClick={(e) => e.stopPropagation()}
       >
         <h2 id="confirm-title" className="text-base font-semibold text-slate-900">
@@ -48,10 +48,10 @@ function ConfirmModal({ dialog }) {
           <button
             ref={confirmRef}
             onClick={() => dialog.resolve(true)}
-            className={`py-2.5 rounded-xl text-white text-sm font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 ${
+            className={`py-2.5 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 ${
               dialog.danger
-                ? 'bg-rose-600 hover:bg-rose-700 focus:ring-rose-500'
-                : 'bg-slate-900 hover:bg-slate-800 focus:ring-slate-500'
+                ? 'bg-rose-600 hover:bg-rose-700 focus:ring-rose-500 text-white'
+                : 'bg-primary hover:bg-primary-hover focus:ring-slate-500 text-on-primary'
             }`}
           >
             {dialog.confirmLabel}
@@ -71,7 +71,7 @@ export default function DialogHost() {
   return (
     <>
       <div
-        className="fixed bottom-20 inset-x-0 z-[60] flex flex-col items-center gap-2 px-4 pointer-events-none print:hidden"
+        className="palette-fixed fixed bottom-20 inset-x-0 z-[60] flex flex-col items-center gap-2 px-4 pointer-events-none print:hidden"
         role="status"
         aria-live="polite"
       >

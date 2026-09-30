@@ -121,7 +121,7 @@ export default function NotesScreen() {
 
   return (
     <div className="min-h-screen bg-slate-50 pb-28">
-      <header className="bg-white border-b border-slate-200 sticky top-0 z-10">
+      <header className="bg-surface border-b border-slate-200 sticky top-0 z-10">
         <div className="max-w-3xl mx-auto px-4 py-3 flex items-center justify-between">
           <div>
             <h1 className="text-xl font-bold text-slate-900">Notes & Reflections Hub</h1>
@@ -137,7 +137,7 @@ export default function NotesScreen() {
 
       <main className="max-w-3xl mx-auto px-4 pt-4 space-y-4">
         {/* Composer Card */}
-        <section className="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm">
+        <section className="bg-surface rounded-2xl border border-slate-200 p-4 shadow-sm">
           <div className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">
             ✍️ Jot a New Note or Reflection
           </div>
@@ -160,7 +160,7 @@ export default function NotesScreen() {
                     onClick={() => toggleComposerTag(t)}
                     className={`text-[11px] px-2.5 py-0.5 rounded-full border transition ${
                       active
-                        ? 'bg-slate-900 text-white border-slate-900'
+                        ? 'bg-primary text-on-primary border-primary'
                         : 'bg-slate-50 text-slate-600 border-slate-200 hover:border-slate-300'
                     }`}
                   >
@@ -174,7 +174,7 @@ export default function NotesScreen() {
               <select
                 value={selectedStandardId}
                 onChange={(e) => setSelectedStandardId(e.target.value)}
-                className="text-xs border border-slate-300 rounded-lg px-2.5 py-1.5 bg-white max-w-[210px] truncate"
+                className="text-xs border border-slate-300 rounded-lg px-2.5 py-1.5 bg-surface max-w-[210px] truncate"
               >
                 <option value="">Link to Standard (optional)…</option>
                 {standardsList.map(s => (
@@ -186,7 +186,7 @@ export default function NotesScreen() {
               <button
                 onClick={addNote}
                 disabled={!body.trim()}
-                className="px-4 py-1.5 rounded-lg bg-slate-900 text-white text-xs font-medium disabled:opacity-40"
+                className="px-4 py-1.5 rounded-lg bg-primary text-on-primary text-xs font-medium disabled:opacity-40"
               >
                 Save Note
               </button>
@@ -195,14 +195,14 @@ export default function NotesScreen() {
         </section>
 
         {/* Filters Card */}
-        <section className="bg-white rounded-2xl border border-slate-200 p-4 space-y-3 shadow-sm">
+        <section className="bg-surface rounded-2xl border border-slate-200 p-4 space-y-3 shadow-sm">
           <div className="flex flex-wrap gap-2">
             <select
               value={subjectFilter ?? ''}
               onChange={(e) =>
                 setSubjectFilter(e.target.value ? Number(e.target.value) : null)
               }
-              className="text-xs border border-slate-300 rounded-lg px-2.5 py-1.5 bg-white"
+              className="text-xs border border-slate-300 rounded-lg px-2.5 py-1.5 bg-surface"
             >
               <option value="">All subjects</option>
               {subjects.map(s => (
@@ -237,8 +237,8 @@ export default function NotesScreen() {
               onClick={() => setTagFilter(null)}
               className={`text-[11px] px-2.5 py-1 rounded-full border ${
                 !tagFilter
-                  ? 'bg-slate-900 text-white border-slate-900 font-medium'
-                  : 'bg-white text-slate-600 border-slate-200'
+                  ? 'bg-primary text-on-primary border-primary font-medium'
+                  : 'bg-surface text-slate-600 border-slate-200'
               }`}
             >
               All tags
@@ -250,7 +250,7 @@ export default function NotesScreen() {
                 className={`text-[11px] px-2.5 py-1 rounded-full border ${
                   tagFilter === t
                     ? 'bg-blue-600 text-white border-blue-600 font-medium'
-                    : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300'
+                    : 'bg-surface text-slate-600 border-slate-200 hover:border-slate-300'
                 }`}
               >
                 #{t}
@@ -262,11 +262,11 @@ export default function NotesScreen() {
         {/* Notes Feed */}
         {loading ? (
           <div className="space-y-2 animate-pulse">
-            <div className="h-24 bg-white rounded-2xl" />
-            <div className="h-24 bg-white rounded-2xl" />
+            <div className="h-24 bg-surface rounded-2xl" />
+            <div className="h-24 bg-surface rounded-2xl" />
           </div>
         ) : filtered.length === 0 ? (
-          <div className="bg-white rounded-2xl border border-slate-200 p-10 text-center">
+          <div className="bg-surface rounded-2xl border border-slate-200 p-10 text-center">
             <div className="text-4xl mb-2">📓</div>
             <h3 className="font-semibold text-slate-800">No notes found</h3>
             <p className="text-sm text-slate-500 mt-1">
@@ -281,7 +281,7 @@ export default function NotesScreen() {
               return (
                 <li
                   key={note.id}
-                  className="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm"
+                  className="bg-surface rounded-2xl border border-slate-200 p-4 shadow-sm"
                 >
                   <div className="flex items-start justify-between gap-2 mb-1.5">
                     <div className="flex items-center gap-2 flex-wrap">
@@ -346,8 +346,8 @@ export default function NotesScreen() {
                               }
                               className={`text-[10px] px-2 py-0.5 rounded-full border ${
                                 has
-                                  ? 'bg-slate-900 text-white border-slate-900'
-                                  : 'bg-white text-slate-500 border-slate-200'
+                                  ? 'bg-primary text-on-primary border-primary'
+                                  : 'bg-surface text-slate-500 border-slate-200'
                               }`}
                             >
                               #{t}
@@ -358,7 +358,7 @@ export default function NotesScreen() {
                       <div className="flex justify-end">
                         <button
                           onClick={() => saveEdit(note.id)}
-                          className="px-3 py-1.5 rounded-lg bg-slate-900 text-white text-xs font-medium"
+                          className="px-3 py-1.5 rounded-lg bg-primary text-on-primary text-xs font-medium"
                         >
                           Save Changes
                         </button>

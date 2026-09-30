@@ -4,9 +4,11 @@ import { BrowserRouter } from 'react-router-dom';
 import App from './App';
 import './index.css';
 import { migrateExistingInstall } from './db/onboarding';
+import { applyDisplay } from './lib/theme';
 import { initPWA } from './pwa/registerSW';
 import { requestPersistentStorage } from './pwa/persist';
 
+applyDisplay();
 initPWA();
 
 migrateExistingInstall().catch(() => {}).finally(async () => {

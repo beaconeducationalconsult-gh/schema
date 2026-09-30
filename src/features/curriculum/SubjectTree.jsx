@@ -56,7 +56,7 @@ export default function SubjectTree({ subject, currentStandardId, onSetCurrent }
 
   if (tree.length === 0) {
     return (
-      <div className="bg-white rounded-2xl border border-slate-200 p-6 text-center">
+      <div className="bg-surface rounded-2xl border border-slate-200 p-6 text-center">
         <p className="text-sm text-slate-600 mb-3">No strands yet for {subject.name}.</p>
         <InlineAdd label="+ Add first strand" onAdd={addStrand} />
       </div>
@@ -68,7 +68,7 @@ export default function SubjectTree({ subject, currentStandardId, onSetCurrent }
       {tree.map(strand => {
         const strandOpen = openStrand === strand.id;
         return (
-          <div key={strand.id} className="bg-white rounded-2xl border border-slate-200 shadow-sm">
+          <div key={strand.id} className="bg-surface rounded-2xl border border-slate-200 shadow-sm">
             <button
               onClick={() => setOpenStrand(strandOpen ? null : strand.id)}
               className="w-full flex items-center justify-between px-4 py-3 text-left"
@@ -216,7 +216,7 @@ function StandardRow({
       className={`rounded-xl border p-3 transition ${
         isCurrent
           ? 'border-emerald-400 bg-emerald-50/70'
-          : 'border-slate-200 bg-white'
+          : 'border-slate-200 bg-surface'
       }`}
     >
       <div className="flex items-start justify-between gap-3">

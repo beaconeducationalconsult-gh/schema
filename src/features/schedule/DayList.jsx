@@ -19,12 +19,12 @@ export default function DayList({ data, todayKey, editMode, onOpenSlot }) {
           <section
             key={key}
             className={`rounded-2xl border ${
-              isToday ? 'border-slate-900' : 'border-slate-200'
-            } bg-white overflow-hidden`}
+              isToday ? 'border-primary' : 'border-slate-200'
+            } bg-surface overflow-hidden`}
           >
             <header
               className={`px-4 py-2 flex items-center justify-between ${
-                isToday ? 'bg-slate-900 text-white' : 'bg-slate-50 text-slate-700'
+                isToday ? 'bg-primary text-on-primary' : 'bg-slate-50 text-slate-700'
               }`}
             >
               <div>

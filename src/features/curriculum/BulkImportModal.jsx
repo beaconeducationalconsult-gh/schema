@@ -31,7 +31,7 @@ export default function BulkImportModal({ subject, onClose, onImported }) {
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="bg-white w-full sm:max-w-xl rounded-t-2xl sm:rounded-2xl p-5 shadow-xl"
+        className="bg-surface w-full sm:max-w-xl rounded-t-2xl sm:rounded-2xl p-5 shadow-xl"
       >
         <div className="flex items-center justify-between mb-2">
           <h3 className="text-lg font-semibold">
@@ -68,7 +68,7 @@ export default function BulkImportModal({ subject, onClose, onImported }) {
           <button
             onClick={handleImport}
             disabled={!text.trim() || busy}
-            className="px-4 py-2 text-sm rounded-lg bg-slate-900 text-white disabled:opacity-40"
+            className="px-4 py-2 text-sm rounded-lg bg-primary text-on-primary disabled:opacity-40"
           >
             {busy ? 'Importing…' : 'Import Standards'}
           </button>

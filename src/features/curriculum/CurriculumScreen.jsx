@@ -30,7 +30,7 @@ export default function CurriculumScreen() {
 
   return (
     <div className="min-h-screen bg-slate-50 pb-28">
-      <header className="bg-white border-b border-slate-200 sticky top-0 z-10">
+      <header className="bg-surface border-b border-slate-200 sticky top-0 z-10">
         <div className="max-w-3xl mx-auto px-4 py-4 flex items-center justify-between gap-2">
           <div>
             <h1 className="text-xl font-bold text-slate-900">Curriculum Catalogue</h1>
@@ -49,7 +49,7 @@ export default function CurriculumScreen() {
             )}
             <button
               onClick={() => setEditingSubject({ isNew: true })}
-              className="px-3 py-2 rounded-lg bg-slate-900 text-white text-xs font-medium"
+              className="px-3 py-2 rounded-lg bg-primary text-on-primary text-xs font-medium"
             >
               + Subject
             </button>
@@ -63,8 +63,8 @@ export default function CurriculumScreen() {
               onClick={() => setActiveId(s.id)}
               className={`px-3 py-1.5 rounded-full text-sm whitespace-nowrap border transition ${
                 activeId === s.id
-                  ? 'bg-slate-900 text-white border-slate-900'
-                  : 'bg-white text-slate-700 border-slate-200 hover:border-slate-300'
+                  ? 'bg-primary text-on-primary border-primary'
+                  : 'bg-surface text-slate-700 border-slate-200 hover:border-slate-300'
               }`}
             >
               <span
@@ -137,7 +137,7 @@ function EmptyState({ onAdd }) {
       <p className="text-sm text-slate-500 mt-1">Start by adding a subject.</p>
       <button
         onClick={onAdd}
-        className="mt-4 px-4 py-2 rounded-lg bg-slate-900 text-white text-sm"
+        className="mt-4 px-4 py-2 rounded-lg bg-primary text-on-primary text-sm"
       >
         + Add Subject
       </button>

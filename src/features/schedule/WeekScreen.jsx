@@ -71,7 +71,7 @@ export default function WeekScreen() {
 
   return (
     <div className="min-h-screen bg-slate-50 pb-28">
-      <header className="bg-white border-b border-slate-200 sticky top-0 z-10 print:static print:border-0">
+      <header className="bg-surface border-b border-slate-200 sticky top-0 z-10 print:static print:border-0">
         <div className="max-w-5xl mx-auto px-4 py-3">
           {/* Row 1: nav */}
           <div className="flex items-center justify-between gap-2 flex-wrap">
@@ -118,7 +118,7 @@ export default function WeekScreen() {
               </button>
               <button
                 onClick={() => setEditingSlot({ isNew: true })}
-                className="text-xs px-3 py-1.5 rounded-lg bg-slate-900 text-white font-medium"
+                className="text-xs px-3 py-1.5 rounded-lg bg-primary text-on-primary font-medium"
               >
                 + Add Slot
               </button>
@@ -142,7 +142,7 @@ export default function WeekScreen() {
                 className={`text-xs px-3 py-1 rounded-lg border transition ${
                   editMode
                     ? 'bg-amber-100 border-amber-300 text-amber-900 font-medium'
-                    : 'bg-white border-slate-200 text-slate-600'
+                    : 'bg-surface border-slate-200 text-slate-600'
                 }`}
               >
                 {editMode ? '✓ Done Editing Slots' : '✎ Edit Slots'}
@@ -206,7 +206,7 @@ function Tab({ active, onClick, children }) {
     <button
       onClick={onClick}
       className={`px-3 py-1 text-xs rounded-md font-medium ${
-        active ? 'bg-white shadow text-slate-900' : 'text-slate-500'
+        active ? 'bg-surface shadow text-slate-900' : 'text-slate-500'
       }`}
     >
       {children}
@@ -220,12 +220,12 @@ function Skeleton({ view }) {
       {view === 'grid' ? (
         <div className="grid grid-cols-5 gap-2">
           {Array.from({ length: 5 }).map((_, i) => (
-            <div key={i} className="h-64 bg-white rounded-xl" />
+            <div key={i} className="h-64 bg-surface rounded-xl" />
           ))}
         </div>
       ) : (
         Array.from({ length: 5 }).map((_, i) => (
-          <div key={i} className="h-24 bg-white rounded-xl" />
+          <div key={i} className="h-24 bg-surface rounded-xl" />
         ))
       )}
     </div>

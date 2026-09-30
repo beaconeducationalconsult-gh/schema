@@ -4,7 +4,7 @@ export default function PrefsSection({ prefs, onChange }) {
   const set = (patch) => onChange({ ...prefs, ...patch });
 
   return (
-    <section className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
+    <section className="bg-surface rounded-2xl border border-slate-200 p-5 shadow-sm">
       <h2 className="text-sm font-semibold text-slate-700 uppercase tracking-wide mb-3">
         ⚙️ Preferences
       </h2>
@@ -13,7 +13,7 @@ export default function PrefsSection({ prefs, onChange }) {
         <select
           value={prefs.weekStartsOn}
           onChange={(e) => set({ weekStartsOn: Number(e.target.value) })}
-          className="text-sm border border-slate-300 rounded-lg px-2.5 py-1.5 bg-white"
+          className="text-sm border border-slate-300 rounded-lg px-2.5 py-1.5 bg-surface"
         >
           <option value={1}>Monday</option>
           <option value={0}>Sunday</option>

@@ -71,7 +71,7 @@ export default function SlotEditor({ slot, subjects, onClose, onSaved }) {
             <select
               value={dayOfWeek}
               onChange={(e) => setDayOfWeek(Number(e.target.value))}
-              className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm bg-white"
+              className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm bg-surface"
             >
               {DAYS.map(d => (
                 <option key={d.id} value={d.id}>{d.label}</option>
@@ -111,7 +111,7 @@ export default function SlotEditor({ slot, subjects, onClose, onSaved }) {
             <select
               value={subjectId}
               onChange={(e) => setSubjectId(Number(e.target.value))}
-              className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm bg-white"
+              className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm bg-surface"
             >
               {subjects.map(s => (
                 <option key={s.id} value={s.id}>{s.name}</option>
