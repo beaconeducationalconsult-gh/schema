@@ -279,12 +279,22 @@ function LessonsTabContent({ rows }) {
   if (rows.length === 0) {
     return (
       <div className="bg-surface rounded-2xl border border-slate-200 p-8 text-center">
-        <div className="text-3xl mb-2">📝</div>
-        <div className="text-sm font-medium text-slate-700">No lessons this week</div>
-        <div className="text-xs text-slate-500 mt-1">Tap a timetable slot to create a lesson plan.</div>
-        <Link to="/history" className="inline-block mt-3 text-xs text-blue-600 font-medium hover:underline">
-          View all history →
-        </Link>
+        <div className="text-5xl mb-3">📝</div>
+        <h3 className="text-base font-semibold text-slate-800">No lessons this week</h3>
+        <p className="text-sm text-slate-500 mt-1 max-w-sm mx-auto">
+          Lessons are created when you tap a timetable slot. Add a slot or pick a week with classes.
+        </p>
+        <div className="flex flex-col sm:flex-row gap-2 justify-center mt-4">
+          <button
+            onClick={() => window.dispatchEvent(new CustomEvent('tc-open-add-slot'))}
+            className="px-4 py-2.5 rounded-xl bg-primary text-on-primary text-sm font-medium min-h-[44px]"
+          >
+            + Add slot
+          </button>
+          <Link to="/history" className="px-4 py-2.5 rounded-xl border border-slate-300 text-slate-700 text-sm font-medium min-h-[44px] flex items-center justify-center">
+            View all history →
+          </Link>
+        </div>
       </div>
     );
   }

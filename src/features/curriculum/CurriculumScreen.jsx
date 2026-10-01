@@ -171,16 +171,21 @@ export default function CurriculumScreen() {
 
 function EmptyState({ onAdd }) {
   return (
-    <div className="text-center py-16">
+    <div className="bg-surface rounded-2xl border border-slate-200 p-8 text-center">
       <div className="text-5xl mb-3">📚</div>
-      <h2 className="text-lg font-semibold">No subjects yet</h2>
-      <p className="text-sm text-slate-500 mt-1">Start by adding a subject.</p>
-      <button
-        onClick={onAdd}
-        className="mt-4 px-4 py-2 rounded-lg bg-primary text-on-primary text-sm"
-      >
-        + Add Subject
-      </button>
+      <h2 className="text-base font-semibold text-slate-800">No subjects yet</h2>
+      <p className="text-sm text-slate-500 mt-1 max-w-sm mx-auto">
+        Add your first subject to start building strands, standards and indicators. You can also bulk-import via CSV.
+      </p>
+      <div className="flex flex-col sm:flex-row gap-2 justify-center mt-4">
+        <button
+          onClick={onAdd}
+          className="px-4 py-2.5 rounded-xl bg-primary text-on-primary text-sm font-medium min-h-[44px]"
+        >
+          + Add Subject
+        </button>
+        <span className="hidden sm:flex items-center text-xs text-slate-400">or use Bulk CSV in header</span>
+      </div>
     </div>
   );
 }

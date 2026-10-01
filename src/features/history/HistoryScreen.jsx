@@ -165,12 +165,20 @@ function resolveRange(filters, terms) {
 
 function EmptyState() {
   return (
-    <div className="bg-surface rounded-2xl border border-slate-200 p-10 text-center">
-      <div className="text-4xl mb-2">📭</div>
-      <h3 className="font-semibold text-slate-800">No lessons match</h3>
-      <p className="text-sm text-slate-500 mt-1">
-        Try widening the range or clearing filters.
+    <div className="bg-surface rounded-2xl border border-slate-200 p-8 text-center">
+      <div className="text-5xl mb-3">📭</div>
+      <h3 className="text-base font-semibold text-slate-800">No lessons match</h3>
+      <p className="text-sm text-slate-500 mt-1 max-w-sm mx-auto">
+        Try widening the date range, clearing filters, or create your first lesson from the timetable.
       </p>
+      <div className="flex flex-col sm:flex-row gap-2 justify-center mt-4">
+        <Link to="/schedule" className="px-4 py-2.5 rounded-xl bg-primary text-on-primary text-sm font-medium min-h-[44px] flex items-center justify-center">
+          Build my timetable
+        </Link>
+        <Link to="/curriculum" className="px-4 py-2.5 rounded-xl border border-slate-300 text-slate-700 text-sm font-medium min-h-[44px] flex items-center justify-center">
+          Add curriculum
+        </Link>
+      </div>
     </div>
   );
 }

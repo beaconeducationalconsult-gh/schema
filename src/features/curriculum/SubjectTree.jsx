@@ -113,9 +113,26 @@ export default function SubjectTree({ subject, currentStandardId, onSetCurrent, 
 
   if (tree.length === 0) {
     return (
-      <div className="bg-surface rounded-2xl border border-slate-200 p-6 text-center">
-        <p className="text-sm text-slate-600 mb-3">No strands yet for {subject.name}.</p>
-        <InlineAdd label="+ Add first strand" onAdd={addStrand} />
+      <div className="bg-surface rounded-2xl border border-slate-200 p-8 text-center">
+        <div className="text-5xl mb-3">🌱</div>
+        <h3 className="text-base font-semibold text-slate-800">No strands yet for {subject.name}</h3>
+        <p className="text-sm text-slate-500 mt-1 max-w-sm mx-auto">Strands group your standards (e.g., “Number & Algebra”). Add your first strand to get started.</p>
+        <div className="mt-4 flex justify-center">
+          <InlineAdd label="+ Add first strand" onAdd={addStrand} />
+        </div>
+      </div>
+    );
+  }
+
+  if (isSearching && (!displayTree || displayTree.length === 0)) {
+    return (
+      <div className="bg-surface rounded-2xl border border-slate-200 p-8 text-center">
+        <div className="text-3xl mb-2">🔍</div>
+        <p className="text-sm font-medium text-slate-700">No standards match “{q}”</p>
+        <p className="text-xs text-slate-500 mt-1">Try a different keyword or clear the search.</p>
+        <div className="text-xs text-slate-400 mt-3">
+          {tree.reduce((s, st) => s + st.subStrands.reduce((a, sub) => a + sub.standards.length, 0), 0)} standards in {subject.name}
+        </div>
       </div>
     );
   }

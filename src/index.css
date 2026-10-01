@@ -11,9 +11,20 @@
 }
 
 @media print {
-  body { background: white; }
+  body { background: white; color: #0f172a; }
   .print\:hidden { display: none !important; }
   .print\:block { display: block !important; }
   .print\:break-inside-avoid { break-inside: avoid; }
-  @page { margin: 14mm; }
+  @page { margin: 12mm; }
+  /* Hide chrome for clean print */
+  nav, header.print\:hidden, .fixed.bottom-20, .fixed.bottom-24, #command-palette { display: none !important; }
+  /* Make cards flat for print */
+  .shadow-sm, .shadow, .shadow-lg, .shadow-xl { box-shadow: none !important; }
+  .rounded-2xl, .rounded-xl { border-radius: 0 !important; }
+  .bg-slate-50 { background: white !important; }
+  .max-w-3xl, .max-w-5xl { max-width: none !important; margin: 0 !important; padding: 0 !important; }
+  /* Ensure WeekGrid prints as table */
+  .grid { gap: 0.5rem !important; }
+  /* Avoid page breaks inside lesson cards */
+  section, article, li { break-inside: avoid; }
 }

@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
+import Fuse from 'fuse.js';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { Link } from 'react-router-dom';
 import {
@@ -68,18 +69,42 @@ export default function NotesScreen() {
   }, [items]);
 
   const filtered = useMemo(() => {
-    return items.filter(r => {
+    const base = items.filter((r) => {
       if (subjectFilter && r.subject?.id !== subjectFilter) return false;
       if (tagFilter && !(r.note.tags || []).includes(tagFilter)) return false;
-      if (search.trim()) {
-        const q = search.trim().toLowerCase();
-        const inBody = (r.note.body || '').toLowerCase().includes(q);
-        const inInd  = (r.standard?.indicator || '').toLowerCase().includes(q);
-        const inSub  = (r.subject?.name || '').toLowerCase().includes(q);
-        const inTags = (r.note.tags || []).some(t => t.toLowerCase().includes(q));
-        if (!inBody && !inInd && !inSub && !inTags) return false;
-      }
       return true;
+    });
+    const q = search.trim();
+    if (!q) return base;
+    // Fuzzy over body + indicator + subject + tags
+    const withHay = base.map((r) => ({
+      ...r,
+      _hay: [
+        r.note.body || '',
+        r.standard?.indicator || '',
+        r.standard?.contentStandard || '',
+        r.subject?.name || '',
+        (r.note.tags || []).join(' '),
+      ].join(' '),
+    }));
+    const fuse = new Fuse(withHay, {
+      keys: [{ name: '_hay', weight: 1 }],
+      threshold: 0.35,
+      ignoreLocation: true,
+      minMatchCharLength: 2,
+    });
+    const hits = fuse.search(q);
+    if (hits.length > 0) return hits.map((h) => {
+      const { _hay, ...rest } = h.item;
+      return rest;
+    });
+    const lower = q.toLowerCase();
+    return base.filter((r) => {
+      const inBody = (r.note.body || '').toLowerCase().includes(lower);
+      const inInd = (r.standard?.indicator || '').toLowerCase().includes(lower);
+      const inSub = (r.subject?.name || '').toLowerCase().includes(lower);
+      const inTags = (r.note.tags || []).some((t) => t.toLowerCase().includes(lower));
+      return inBody || inInd || inSub || inTags;
     });
   }, [items, subjectFilter, tagFilter, search]);
 
@@ -281,12 +306,18 @@ export default function NotesScreen() {
             <div className="h-24 bg-surface rounded-2xl" />
           </div>
         ) : filtered.length === 0 ? (
-          <div className="bg-surface rounded-2xl border border-slate-200 p-10 text-center">
-            <div className="text-4xl mb-2">📓</div>
-            <h3 className="font-semibold text-slate-800">No notes found</h3>
-            <p className="text-sm text-slate-500 mt-1">
-              Jot a note above or clear your active filters.
+          <div className="bg-surface rounded-2xl border border-slate-200 p-8 text-center">
+            <div className="text-5xl mb-3">📓</div>
+            <h3 className="text-base font-semibold text-slate-800">No notes found</h3>
+            <p className="text-sm text-slate-500 mt-1 max-w-sm mx-auto">
+              Jot a reflection above, or clear filters to see all notes. Notes stay linked to lessons & standards.
             </p>
+            <button
+              onClick={() => composerRef.current?.focus()}
+              className="mt-4 px-4 py-2.5 rounded-xl bg-primary text-on-primary text-sm font-medium min-h-[44px]"
+            >
+              + Write your first note
+            </button>
           </div>
         ) : (
           <ul className="space-y-2.5">
