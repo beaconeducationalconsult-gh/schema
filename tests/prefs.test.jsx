@@ -89,6 +89,8 @@ describe('default activity length', () => {
     await savePrefs({ defaultActivityMinutes: 25 });
     render(<ActivityPromptBar lessonId={1} standard={null} onOpenTemplates={() => {}} />);
 
+    // Phase 0: single + Add step sheet, type pills inside
+    fireEvent.click(screen.getByRole('button', { name: /Add step/i }));
     await waitFor(async () => {
       fireEvent.click(screen.getByRole('button', { name: /Exercise/ }));
       expect(screen.getByRole('spinbutton').value).toBe('25');
@@ -100,6 +102,7 @@ describe('default activity length', () => {
   it('an edited value wins over the default', async () => {
     await savePrefs({ defaultActivityMinutes: 25 });
     render(<ActivityPromptBar lessonId={1} standard={null} onOpenTemplates={() => {}} />);
+    fireEvent.click(screen.getByRole('button', { name: /Add step/i }));
     await waitFor(() => screen.getByRole('button', { name: /Exercise/ }));
     fireEvent.click(screen.getByRole('button', { name: /Exercise/ }));
     fireEvent.change(screen.getByRole('spinbutton'), { target: { value: '7' } });

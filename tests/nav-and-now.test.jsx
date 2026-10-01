@@ -38,7 +38,7 @@ describe('bottom nav "More" menu', () => {
   it('keeps four tabs on the bar and hides History/Settings until opened', () => {
     setup();
     const nav = screen.getByRole('navigation', { name: 'Primary' });
-    for (const name of ['Now', 'Week', 'Curriculum', 'Notes', 'More']) {
+    for (const name of ['Now', 'Timetable', 'Curriculum', 'Notes', 'More']) {
       expect(nav.textContent).toContain(name);
     }
     expect(screen.queryByRole('link', { name: 'History' })).toBeNull();

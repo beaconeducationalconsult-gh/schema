@@ -25,6 +25,7 @@ export default function CurriculumScreen() {
   const activeId = subjects.some(s => s.id === pickedId) ? pickedId : subjects[0]?.id ?? null;
   const [editingSubject, setEditingSubject] = useState(null);
   const [bulkOpen, setBulkOpen] = useState(false);
+  const [search, setSearch] = useState('');
 
   const active = subjects.find(s => s.id === activeId) || null;
 
@@ -42,14 +43,14 @@ export default function CurriculumScreen() {
             {active && (
               <button
                 onClick={() => setBulkOpen(true)}
-                className="px-3 py-2 rounded-lg border border-slate-300 text-slate-700 text-xs font-medium hover:bg-slate-50"
+                className="px-3 py-2.5 rounded-lg border border-slate-300 text-slate-700 text-xs font-medium hover:bg-slate-50 min-h-[44px]"
               >
                 ⬆ Bulk CSV
               </button>
             )}
             <button
               onClick={() => setEditingSubject({ isNew: true })}
-              className="px-3 py-2 rounded-lg bg-primary text-on-primary text-xs font-medium"
+              className="px-3 py-2.5 rounded-lg bg-primary text-on-primary text-xs font-medium min-h-[44px]"
             >
               + Subject
             </button>
@@ -61,7 +62,7 @@ export default function CurriculumScreen() {
             <button
               key={s.id}
               onClick={() => setActiveId(s.id)}
-              className={`px-3 py-1.5 rounded-full text-sm whitespace-nowrap border transition ${
+              className={`px-3 py-2 rounded-full text-sm whitespace-nowrap border transition min-h-[36px] ${
                 activeId === s.id
                   ? 'bg-primary text-on-primary border-primary'
                   : 'bg-surface text-slate-700 border-slate-200 hover:border-slate-300'
@@ -73,7 +74,7 @@ export default function CurriculumScreen() {
               />
               {s.name}
               {stats[s.id]?.standards ? (
-                <span className="ml-2 text-[10px] opacity-70">
+                <span className="ml-2 text-xs opacity-70">
                   {stats[s.id].standards}
                 </span>
               ) : null}
@@ -85,7 +86,7 @@ export default function CurriculumScreen() {
       <main className="max-w-3xl mx-auto px-4 pt-4">
         {active ? (
           <>
-            <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center justify-between mb-3 gap-2">
               <div className="text-sm text-slate-500">
                 {stats[active.id]?.strands || 0} strands ·{' '}
                 {stats[active.id]?.subStrands || 0} sub-strands ·{' '}
@@ -93,10 +94,32 @@ export default function CurriculumScreen() {
               </div>
               <button
                 onClick={() => setEditingSubject(active)}
-                className="text-xs text-slate-600 hover:underline font-medium"
+                className="text-xs text-slate-600 hover:underline font-medium px-2 py-1.5 rounded-lg hover:bg-slate-100 min-h-[32px]"
               >
                 Edit subject
               </button>
+            </div>
+
+            <div className="relative mb-3">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" aria-hidden="true">
+                🔍
+              </span>
+              <input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search standards, indicators, exemplars…"
+                className="w-full pl-9 pr-9 py-2.5 rounded-xl border border-slate-300 text-sm bg-surface focus:outline-none focus:ring-2 focus:ring-slate-400"
+                aria-label="Search curriculum"
+              />
+              {search && (
+                <button
+                  onClick={() => setSearch('')}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full hover:bg-slate-100 flex items-center justify-center text-slate-400 hover:text-slate-600"
+                  aria-label="Clear search"
+                >
+                  ✕
+                </button>
+              )}
             </div>
 
             <SubjectTree
@@ -104,6 +127,7 @@ export default function CurriculumScreen() {
               subject={active}
               currentStandardId={currentStdMap[active.id]}
               onSetCurrent={(stdId) => settings.setCurrentStandard(active.id, stdId)}
+              searchQuery={search}
             />
           </>
         ) : (

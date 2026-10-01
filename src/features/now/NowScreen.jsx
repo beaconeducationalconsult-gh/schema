@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { Link } from 'react-router-dom';
 import { useNow } from '../../hooks/useNow';
 import {
   subjects as subjectRepo,
@@ -11,6 +10,7 @@ import {
 import { ensureNowLesson, loadNowContext } from '../../db/now';
 import { daysSinceExport } from '../../db/backup';
 import { db } from '../../db/schema';
+import { toast } from '../../lib/dialogs';
 import ResourceManagerModal from '../../components/ResourceManagerModal';
 import RoutineTemplateModal from '../../components/RoutineTemplateModal';
 import CompleteLessonModal from '../../components/CompleteLessonModal';
@@ -53,6 +53,20 @@ export default function NowScreen() {
     EMPTY_MAP
   );
   const backupAgeDays = useLiveQuery(daysSinceExport, [], null);
+
+  // Backup nudge as toast, not a persistent banner that pushes content down
+  useEffect(() => {
+    if (backupAgeDays == null || backupAgeDays <= 14) return;
+    const key = 'tc-backup-toast-date';
+    const today = toDateKey(new Date());
+    try {
+      if (localStorage.getItem(key) === today) return;
+      localStorage.setItem(key, today);
+    } catch {}
+    toast(`It's been ${backupAgeDays} days since your last backup.`, {
+      action: { label: 'Export now', onClick: () => { window.location.href = '/settings'; } },
+    });
+  }, [backupAgeDays]);
 
   const liveSlot = current || next;
   const fallbackSlot = slots[0] || allSlots[0] || null;
@@ -119,15 +133,6 @@ export default function NowScreen() {
         overrideSlotId={overrideSlotId}
         onSelectSlot={(id) => setOverrideSlotId(id)}
       />
-
-      {backupAgeDays != null && backupAgeDays > 14 && (
-        <div className="max-w-3xl mx-auto px-4 pt-3">
-          <div className="text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2 flex items-center justify-between">
-            <span>It's been {backupAgeDays} days since your last backup.</span>
-            <Link to="/settings" className="underline font-medium">Export now</Link>
-          </div>
-        </div>
-      )}
 
       {loadingContext || !context ? (
         <ContextSkeleton />

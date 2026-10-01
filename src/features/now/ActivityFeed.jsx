@@ -2,33 +2,25 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { ACTIVITY_META } from '../../lib/activityMeta';
 
-export default function ActivityFeed({ items, lessonId, onToggleDone, onCompleteLesson }) {
+export default function ActivityFeed({ items, lessonId, onToggleDone }) {
   const totalMin = items.reduce((s, a) => s + (a.duration || 0), 0);
   const doneCount = items.filter(a => a.done).length;
 
   return (
     <section className="max-w-3xl mx-auto px-4 pt-3">
       <div className="bg-surface rounded-2xl shadow-sm border border-slate-200 p-5">
-        <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center justify-between mb-3 gap-2">
           <div className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
-            📋 Lesson Activities ({doneCount}/{items.length} done · {totalMin} min)
+            Teaching steps ({doneCount}/{items.length} · {totalMin} min)
           </div>
-          <div className="flex items-center gap-3">
-            <button
-              onClick={onCompleteLesson}
-              className="text-xs text-emerald-700 font-semibold hover:underline"
+          {lessonId && (
+            <Link
+              to={`/lesson/${lessonId}`}
+              className="text-xs text-blue-600 font-medium hover:underline px-2 py-1 rounded-lg hover:bg-blue-50 min-h-[32px] flex items-center"
             >
-              ✓ Complete & Advance
-            </button>
-            {lessonId && (
-              <Link
-                to={`/lesson/${lessonId}`}
-                className="text-xs text-blue-600 font-medium hover:underline"
-              >
-                Edit Plan →
-              </Link>
-            )}
-          </div>
+              Edit plan →
+            </Link>
+          )}
         </div>
         <ol className="space-y-2.5">
           {items
