@@ -1,40 +1,40 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { useLiveQuery } from 'dexie-react-hooks';
 import { getSettings, saveSettings, resetSettings } from '../../db/settings';
+import { resetToSeed } from '../../db/backup';
+import { confirmDialog, toast } from '../../lib/dialogs';
 import ProfileSection from './ProfileSection';
 import TermsSection from './TermsSection';
+import DisplaySection from './DisplaySection';
 import PrefsSection from './PrefsSection';
 import BackupSection from './BackupSection';
 import StorageSection from './StorageSection';
 import AboutSection from './AboutSection';
 
 export default function SettingsScreen() {
-  const [settings, setSettings] = useState(null);
-  const [dirty, setDirty] = useState(false);
-  const [storageKey, setStorageKey] = useState(0);
+  // Stored values stay live (backup import, reset, other tabs…); edits are
+  // kept in a small draft of just the fields the teacher touched, and only
+  // those are written on save — so we never overwrite unrelated keys such as
+  // the last-backup timestamp or the per-subject "current standard" pointers.
+  const stored = useLiveQuery(getSettings, []);
+  const [draft, setDraft] = useState({});
+  const settings = stored ? { ...stored, ...draft } : null;
+  const dirty = Object.keys(draft).length > 0;
 
-  const reload = async () => {
-    setSettings(await getSettings());
-    setStorageKey(k => k + 1);
-  };
-  useEffect(() => { reload(); }, []);
-
-  const update = (patch) => {
-    setSettings(s => ({ ...s, ...patch }));
-    setDirty(true);
-  };
+  const update = (patch) => setDraft((d) => ({ ...d, ...patch }));
 
   const save = async () => {
-    const { terms, prefs, currentStandardBySubject, ...scalar } = settings;
-    await saveSettings({ ...scalar, terms, prefs, currentStandardBySubject });
-    setDirty(false);
+    await saveSettings(draft);
+    setDraft({});
+    toast.success('Settings saved.');
   };
 
   if (!settings) return <div className="p-6 text-slate-500">Loading…</div>;
 
   return (
     <div className="min-h-screen bg-slate-50 pb-28">
-      <header className="bg-white border-b border-slate-200 sticky top-0 z-10">
+      <header className="bg-surface border-b border-slate-200 sticky top-0 z-10">
         <div className="max-w-3xl mx-auto px-4 py-3 flex items-center justify-between">
           <Link to="/" className="text-sm text-slate-600 hover:text-slate-900 font-medium">
             ← Now
@@ -43,7 +43,7 @@ export default function SettingsScreen() {
           <button
             onClick={save}
             disabled={!dirty}
-            className="text-sm px-3 py-1.5 rounded-lg bg-slate-900 text-white disabled:opacity-40"
+            className="text-sm px-3 py-1.5 rounded-lg bg-primary text-on-primary disabled:opacity-40"
           >
             Save
           </button>
@@ -58,35 +58,37 @@ export default function SettingsScreen() {
           onChange={(terms) => update({ terms })}
         />
 
+        <DisplaySection />
+
         <PrefsSection
           prefs={settings.prefs}
           onChange={(prefs) => update({ prefs })}
         />
 
-        <BackupSection onImported={reload} />
+        <BackupSection onImported={() => setDraft({})} />
 
-        <StorageSection key={storageKey} />
+        <StorageSection />
 
         <AboutSection
           onReset={async () => {
-            if (
-              !confirm(
-                'Reset ALL app data (curriculum, timetable, lessons, settings) to the demo seed?'
-              )
-            )
-              return;
+            const ok = await confirmDialog({
+              title: 'Reset all app data?',
+              message: 'Curriculum, timetable, lessons and settings will be replaced by the demo data.',
+              confirmLabel: 'Reset everything',
+              danger: true,
+            });
+            if (!ok) return;
             await resetSettings();
-            const { resetToSeed } = await import('../../db/backup');
             await resetToSeed();
-            await reload();
-            alert('Reset complete.');
+            setDraft({});
+            toast.success('Reset complete.');
           }}
         />
       </main>
 
       {dirty && (
         <div className="fixed bottom-20 inset-x-0 flex justify-center print:hidden z-30">
-          <div className="bg-slate-900 text-white text-sm px-4 py-2 rounded-full shadow-lg flex items-center gap-3">
+          <div className="bg-primary text-on-primary text-sm px-4 py-2 rounded-full shadow-lg flex items-center gap-3">
             <span>Unsaved changes</span>
             <button onClick={save} className="underline text-xs font-medium">
               Save now

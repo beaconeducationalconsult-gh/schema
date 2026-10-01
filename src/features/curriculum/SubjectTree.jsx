@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
+import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../../db/schema';
 import {
   loadSubjectTree,
@@ -7,30 +8,23 @@ import {
   deleteSubStrand,
   deleteStandard,
 } from '../../db/curriculum';
+import { confirmDialog } from '../../lib/dialogs';
 import StandardEditor from './StandardEditor';
 import InlineAdd from './InlineAdd';
 import ResourceManagerModal from '../../components/ResourceManagerModal';
 import ResourceGallery from '../../components/ResourceGallery';
 
-export default function SubjectTree({ subject, currentStandardId, onSetCurrent, onChanged }) {
-  const [tree, setTree] = useState([]);
-  const [openStrand, setOpenStrand] = useState(null);
-  const [openSub, setOpenSub] = useState(null);
+export default function SubjectTree({ subject, currentStandardId, onSetCurrent }) {
+  // Live tree: edits, deletes, media changes and bulk imports all show up by themselves.
+  const tree = useLiveQuery(() => loadSubjectTree(subject.id), [subject.id]);
+  // `undefined` = never toggled → default to the first strand / sub-strand; `null` = collapsed on purpose.
+  const [strandPick, setOpenStrand] = useState(undefined);
+  const [subPick, setOpenSub] = useState(undefined);
   const [editing, setEditing] = useState(null);
   const [mediaStandard, setMediaStandard] = useState(null);
 
-  async function reload() {
-    const t = await loadSubjectTree(subject.id);
-    setTree(t);
-    if (t.length > 0 && openStrand === null) {
-      setOpenStrand(t[0].id);
-      if (t[0].subStrands?.length > 0 && openSub === null) {
-        setOpenSub(t[0].subStrands[0].id);
-      }
-    }
-  }
-
-  useEffect(() => { reload(); }, [subject.id]);
+  const openStrand = strandPick === undefined ? tree?.[0]?.id ?? null : strandPick;
+  const openSub = subPick === undefined ? tree?.[0]?.subStrands?.[0]?.id ?? null : subPick;
 
   const addStrand = async (name) => {
     const id = await db.strands.add({
@@ -39,8 +33,6 @@ export default function SubjectTree({ subject, currentStandardId, onSetCurrent, 
       order: await nextOrder('strands', 'subjectId', subject.id),
     });
     setOpenStrand(id);
-    reload();
-    onChanged?.();
   };
 
   const addSubStrand = async (strandId, name) => {
@@ -50,8 +42,6 @@ export default function SubjectTree({ subject, currentStandardId, onSetCurrent, 
       order: await nextOrder('subStrands', 'strandId', strandId),
     });
     setOpenSub(id);
-    reload();
-    onChanged?.();
   };
 
   const addStandard = async (subStrandId, payload) => {
@@ -60,13 +50,13 @@ export default function SubjectTree({ subject, currentStandardId, onSetCurrent, 
       order: await nextOrder('standards', 'subStrandId', subStrandId),
       ...payload,
     });
-    reload();
-    onChanged?.();
   };
+
+  if (!tree) return null;
 
   if (tree.length === 0) {
     return (
-      <div className="bg-white rounded-2xl border border-slate-200 p-6 text-center">
+      <div className="bg-surface rounded-2xl border border-slate-200 p-6 text-center">
         <p className="text-sm text-slate-600 mb-3">No strands yet for {subject.name}.</p>
         <InlineAdd label="+ Add first strand" onAdd={addStrand} />
       </div>
@@ -78,7 +68,7 @@ export default function SubjectTree({ subject, currentStandardId, onSetCurrent, 
       {tree.map(strand => {
         const strandOpen = openStrand === strand.id;
         return (
-          <div key={strand.id} className="bg-white rounded-2xl border border-slate-200 shadow-sm">
+          <div key={strand.id} className="bg-surface rounded-2xl border border-slate-200 shadow-sm">
             <button
               onClick={() => setOpenStrand(strandOpen ? null : strand.id)}
               className="w-full flex items-center justify-between px-4 py-3 text-left"
@@ -134,10 +124,8 @@ export default function SubjectTree({ subject, currentStandardId, onSetCurrent, 
                               onEdit={() => setEditing({ standard: std, subStrandId: sub.id })}
                               onManageMedia={() => setMediaStandard(std)}
                               onDelete={async () => {
-                                if (confirm('Delete this standard?')) {
+                                if (await confirmDialog({ title: 'Delete this standard?', confirmLabel: 'Delete', danger: true })) {
                                   await deleteStandard(std.id);
-                                  reload();
-                                  onChanged?.();
                                 }
                               }}
                             />
@@ -154,10 +142,8 @@ export default function SubjectTree({ subject, currentStandardId, onSetCurrent, 
                             />
                             <button
                               onClick={async () => {
-                                if (confirm('Delete sub-strand and all standards under it?')) {
+                                if (await confirmDialog({ title: 'Delete sub-strand?', message: 'All standards under it will be deleted too.', confirmLabel: 'Delete', danger: true })) {
                                   await deleteSubStrand(sub.id);
-                                  reload();
-                                  onChanged?.();
                                 }
                               }}
                               className="text-xs text-rose-500 px-2 hover:underline"
@@ -179,10 +165,8 @@ export default function SubjectTree({ subject, currentStandardId, onSetCurrent, 
                   />
                   <button
                     onClick={async () => {
-                      if (confirm('Delete strand and all children?')) {
+                      if (await confirmDialog({ title: 'Delete strand?', message: 'All sub-strands and standards under it will be deleted too.', confirmLabel: 'Delete', danger: true })) {
                         await deleteStrand(strand.id);
-                        reload();
-                        onChanged?.();
                       }
                     }}
                     className="text-xs text-rose-500 px-2 hover:underline"
@@ -204,7 +188,6 @@ export default function SubjectTree({ subject, currentStandardId, onSetCurrent, 
         <StandardEditor
           standard={editing.standard}
           onClose={() => setEditing(null)}
-          onSaved={() => { reload(); onChanged?.(); }}
         />
       )}
 
@@ -212,7 +195,6 @@ export default function SubjectTree({ subject, currentStandardId, onSetCurrent, 
         <ResourceManagerModal
           standard={mediaStandard}
           onClose={() => setMediaStandard(null)}
-          onChanged={() => { reload(); onChanged?.(); }}
         />
       )}
     </div>
@@ -234,7 +216,7 @@ function StandardRow({
       className={`rounded-xl border p-3 transition ${
         isCurrent
           ? 'border-emerald-400 bg-emerald-50/70'
-          : 'border-slate-200 bg-white'
+          : 'border-slate-200 bg-surface'
       }`}
     >
       <div className="flex items-start justify-between gap-3">

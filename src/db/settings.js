@@ -1,39 +1,50 @@
 import { db } from './schema';
+import { academicStartYear, defaultAcademicYear, defaultTerms } from '../lib/academicYear';
 
-export const SETTINGS_DEFAULTS = {
-  schoolName: 'Achimota Basic School',
-  teacherName: 'Teacher',
-  classLevel: 'Basic 6',
-  academicYear: new Date().getFullYear().toString(),
+/** Fresh defaults. A function (not a constant) so the academic year and terms follow today's date. */
+export function getDefaultSettings(now = new Date()) {
+  return {
+    schoolName: '',
+    teacherName: '',
+    classLevel: '',
+    academicYear: defaultAcademicYear(now),
 
-  // Term windows as { label, from, to } — dates are YYYY-MM-DD
-  terms: [
-    { label: 'Term 1', from: '2026-09-08', to: '2026-12-18' },
-    { label: 'Term 2', from: '2027-01-12', to: '2027-04-16' },
-    { label: 'Term 3', from: '2027-05-04', to: '2027-07-30' },
-  ],
+    // Term windows as { label, from, to } — dates are YYYY-MM-DD
+    terms: defaultTerms(academicStartYear(now)),
 
-  // Preferences
-  prefs: {
-    weekStartsOn: 1,          // 0=Sun, 1=Mon
-    includeWeekend: false,
-    reminderMinutes: 5,
-    defaultActivityMinutes: 10,
-  },
+    // Preferences
+    prefs: {
+      weekStartsOn: 1,          // 0=Sun, 1=Mon
+      includeWeekend: false,
+      reminderMinutes: 5,
+      defaultActivityMinutes: 10,
+    },
 
-  // Set by Curriculum tab
-  currentStandardBySubject: {},
-};
+    // Set by Curriculum tab
+    currentStandardBySubject: {},
+  };
+}
+
+export const ONBOARDED_KEY = 'onboarded';
+
+export async function isOnboarded() {
+  return !!(await db.settings.get(ONBOARDED_KEY))?.value;
+}
+
+export async function markOnboarded() {
+  await db.settings.put({ key: ONBOARDED_KEY, value: true });
+}
 
 /** Read a whole settings object, merged with defaults. */
 export async function getSettings() {
   const rows = await db.settings.toArray();
   const stored = Object.fromEntries(rows.map(r => [r.key, r.value]));
+  const defaults = getDefaultSettings();
   return {
-    ...SETTINGS_DEFAULTS,
+    ...defaults,
     ...stored,
-    prefs: { ...SETTINGS_DEFAULTS.prefs, ...(stored.prefs || {}) },
-    terms: stored.terms || SETTINGS_DEFAULTS.terms,
+    prefs: { ...defaults.prefs, ...(stored.prefs || {}) },
+    terms: stored.terms || defaults.terms,
   };
 }
 
@@ -49,6 +60,30 @@ export async function saveSettings(patch) {
 
 /** Reset everything back to defaults (does not touch curriculum/timetable). */
 export async function resetSettings() {
+  const onboarded = await db.settings.get(ONBOARDED_KEY);
   await db.settings.clear();
-  await saveSettings(SETTINGS_DEFAULTS);
+  await saveSettings(getDefaultSettings());
+  if (onboarded) await db.settings.put(onboarded);
+}
+
+/** Merge a partial update into the stored preferences (other keys are left alone). */
+export async function savePrefs(patch) {
+  const { prefs } = await getSettings();
+  await saveSettings({ prefs: { ...prefs, ...patch } });
+}
+
+/**
+ * "Show weekends" used to be a per-browser toggle on the Week screen
+ * (localStorage `week:includeWeekend`). It is a normal preference now; carry an
+ * existing "on" over once, then drop the old key.
+ */
+export async function migrateLegacyWeekendPref(storage = globalThis.localStorage) {
+  try {
+    const legacy = storage?.getItem('week:includeWeekend');
+    if (legacy == null) return;
+    if (legacy === '1') await savePrefs({ includeWeekend: true });
+    storage.removeItem('week:includeWeekend');
+  } catch {
+    /* storage unavailable — nothing to migrate */
+  }
 }

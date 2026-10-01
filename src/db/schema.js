@@ -23,6 +23,25 @@ db.version(1).stores({
   settings:   'key',
 });
 
+// v2: drop indexes on large / never-queried fields (content, url, caption,
+// names, colours…), add the compound index `ensureForSlot` relies on, and index
+// note tags as multi-entry. Dexie migrates existing data in place.
+db.version(2).stores({
+  subjects:   '++id, order',
+  strands:    '++id, subjectId, order',
+  subStrands: '++id, strandId, order',
+  standards:  '++id, subStrandId, order',
+
+  timetable:  '++id, dayOfWeek, subjectId, [dayOfWeek+startTime]',
+
+  lessons:    '++id, standardId, timetableId, date, status, createdAt, [timetableId+date]',
+  activities: '++id, lessonId, order',
+  notes:      '++id, lessonId, standardId, createdAt, *tags',
+  resources:  '++id, standardId, type',
+
+  settings:   'key',
+});
+
 export const ACTIVITY_TYPES = [
   'exercise',
   'correction',

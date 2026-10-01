@@ -1,6 +1,9 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState } from 'react';
+import { useLiveQuery } from 'dexie-react-hooks';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { loadWeek, ensureLessonFor } from '../../db/schedule';
+import { savePrefs } from '../../db/settings';
+import { usePrefs } from '../../hooks/usePrefs';
 import {
   startOfWeek,
   addWeeks,
@@ -12,64 +15,55 @@ import WeekGrid from './WeekGrid';
 import DayList from './DayList';
 import SlotEditor from './SlotEditor';
 
-const STORAGE_KEY = 'week:includeWeekend';
+const EMPTY = [];
 
 export default function WeekScreen() {
   const [search, setSearch] = useSearchParams();
   const navigate = useNavigate();
 
-  const initial = (() => {
-    const param = search.get('week');
-    return param ? startOfWeek(new Date(param + 'T00:00:00')) : startOfWeek(new Date());
-  })();
+  // "Show weekends" and "Week starts on" come from Settings → Preferences (live).
+  const prefs = usePrefs();
+  const includeWeekend = prefs?.includeWeekend ?? false;
+  const weekStartsOn = prefs?.weekStartsOn ?? 1;
 
-  const [weekStart, setWeekStart] = useState(initial);
-  const [includeWeekend, setIncludeWeekend] = useState(
-    () => localStorage.getItem(STORAGE_KEY) === '1'
-  );
+  // Remember any date inside the shown week, not the week's first day, so changing
+  // "Week starts on" re-slices the same week instead of jumping elsewhere.
+  const [anchor, setAnchor] = useState(() => {
+    const param = search.get('week');
+    return param ? new Date(param + 'T00:00:00') : new Date();
+  });
+  const anchorKey = toDateKey(anchor);
+  const weekStart = startOfWeek(anchor, weekStartsOn);
+  const weekKey = toDateKey(weekStart);
   const [view, setView] = useState(() => {
     return window.matchMedia('(min-width: 768px)').matches ? 'grid' : 'list';
   });
-  const [data, setData] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [todayKey, setTodayKey] = useState(toDateKey(new Date()));
+  // Ticks every minute so "today", the now-line and "This week" stay right on a screen left open.
+  const [now, setNow] = useState(() => new Date());
+  const todayKey = toDateKey(now);
   const [editMode, setEditMode] = useState(false);
   const [editingSlot, setEditingSlot] = useState(null);
-  const [subjectsList, setSubjectsList] = useState([]);
 
   useEffect(() => {
-    const id = setInterval(() => setTodayKey(toDateKey(new Date())), 60_000);
+    const id = setInterval(() => setNow(new Date()), 60_000);
     return () => clearInterval(id);
   }, []);
 
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, includeWeekend ? '1' : '0');
-  }, [includeWeekend]);
+    // The URL holds a date inside the shown week, so a reload or shared link
+    // lands on the same week whichever day the week starts on.
+    if (search.get('week') !== anchorKey) setSearch({ week: anchorKey }, { replace: true });
+  }, [anchorKey, search, setSearch]);
 
-  useEffect(() => {
-    setSearch({ week: toDateKey(weekStart) }, { replace: true });
-  }, [weekStart]);
+  // Live: editing a slot, completing a lesson or restoring a backup refreshes the grid.
+  const data = useLiveQuery(
+    () => (prefs ? loadWeek(weekStart, { includeWeekend, weekStartsOn }) : undefined),
+    [weekKey, includeWeekend, weekStartsOn, !!prefs]
+  );
+  const subjectsList = useLiveQuery(() => subjectRepo.all(), [], EMPTY);
+  const loading = data === undefined;
 
-  const reload = useCallback(() => {
-    let alive = true;
-    setLoading(true);
-    Promise.all([
-      loadWeek(weekStart, { includeWeekend }),
-      subjectRepo.all(),
-    ]).then(([d, subs]) => {
-      if (!alive) return;
-      setData(d);
-      setSubjectsList(subs);
-      setLoading(false);
-    });
-    return () => { alive = false; };
-  }, [toDateKey(weekStart), includeWeekend]);
-
-  useEffect(() => {
-    return reload();
-  }, [reload]);
-
-  const isThisWeek = isSameWeek(weekStart, new Date());
+  const isThisWeek = isSameWeek(weekStart, now, weekStartsOn);
 
   const openSlot = async (slot, date) => {
     if (editMode) {
@@ -82,7 +76,7 @@ export default function WeekScreen() {
 
   return (
     <div className="min-h-screen bg-slate-50 pb-28">
-      <header className="bg-white border-b border-slate-200 sticky top-0 z-10 print:static print:border-0">
+      <header className="bg-surface border-b border-slate-200 sticky top-0 z-10 print:static print:border-0">
         <div className="max-w-5xl mx-auto px-4 py-3">
           {/* Row 1: nav */}
           <div className="flex items-center justify-between gap-2 flex-wrap">
@@ -92,21 +86,21 @@ export default function WeekScreen() {
 
             <div className="flex items-center gap-1">
               <button
-                onClick={() => setWeekStart(w => addWeeks(w, -1))}
+                onClick={() => setAnchor(a => addWeeks(a, -1))}
                 className="w-9 h-9 rounded-lg border border-slate-200 flex items-center justify-center hover:bg-slate-50 print:hidden"
               >
                 ◀
               </button>
               <div className="px-3 text-center min-w-[180px]">
                 <div className="text-sm font-semibold text-slate-900">
-                  {formatWeekRange(weekStart, { includeWeekend })}
+                  {formatWeekRange(weekStart, { includeWeekend, weekStartsOn })}
                 </div>
                 <div className="text-[10px] text-slate-400 uppercase tracking-wider">
                   {isThisWeek ? 'This week' : 'Week'}
                 </div>
               </div>
               <button
-                onClick={() => setWeekStart(w => addWeeks(w, 1))}
+                onClick={() => setAnchor(a => addWeeks(a, 1))}
                 className="w-9 h-9 rounded-lg border border-slate-200 flex items-center justify-center hover:bg-slate-50 print:hidden"
               >
                 ▶
@@ -115,7 +109,7 @@ export default function WeekScreen() {
 
             <div className="flex gap-1.5 print:hidden">
               <button
-                onClick={() => setWeekStart(startOfWeek(new Date()))}
+                onClick={() => setAnchor(new Date())}
                 disabled={isThisWeek}
                 className="text-xs px-3 py-1.5 rounded-lg border border-slate-200 disabled:opacity-40"
               >
@@ -129,7 +123,7 @@ export default function WeekScreen() {
               </button>
               <button
                 onClick={() => setEditingSlot({ isNew: true })}
-                className="text-xs px-3 py-1.5 rounded-lg bg-slate-900 text-white font-medium"
+                className="text-xs px-3 py-1.5 rounded-lg bg-primary text-on-primary font-medium"
               >
                 + Add Slot
               </button>
@@ -153,7 +147,7 @@ export default function WeekScreen() {
                 className={`text-xs px-3 py-1 rounded-lg border transition ${
                   editMode
                     ? 'bg-amber-100 border-amber-300 text-amber-900 font-medium'
-                    : 'bg-white border-slate-200 text-slate-600'
+                    : 'bg-surface border-slate-200 text-slate-600'
                 }`}
               >
                 {editMode ? '✓ Done Editing Slots' : '✎ Edit Slots'}
@@ -164,7 +158,7 @@ export default function WeekScreen() {
               <input
                 type="checkbox"
                 checked={includeWeekend}
-                onChange={(e) => setIncludeWeekend(e.target.checked)}
+                onChange={(e) => savePrefs({ includeWeekend: e.target.checked })}
               />
               Include weekend
             </label>
@@ -184,6 +178,7 @@ export default function WeekScreen() {
         ) : view === 'grid' ? (
           <WeekGrid
             data={data}
+            now={now}
             todayKey={todayKey}
             editMode={editMode}
             onOpenSlot={openSlot}
@@ -191,6 +186,7 @@ export default function WeekScreen() {
         ) : (
           <DayList
             data={data}
+            now={now}
             todayKey={todayKey}
             editMode={editMode}
             onOpenSlot={openSlot}
@@ -205,7 +201,6 @@ export default function WeekScreen() {
           onClose={() => setEditingSlot(null)}
           onSaved={() => {
             setEditingSlot(null);
-            reload();
           }}
         />
       )}
@@ -218,7 +213,7 @@ function Tab({ active, onClick, children }) {
     <button
       onClick={onClick}
       className={`px-3 py-1 text-xs rounded-md font-medium ${
-        active ? 'bg-white shadow text-slate-900' : 'text-slate-500'
+        active ? 'bg-surface shadow text-slate-900' : 'text-slate-500'
       }`}
     >
       {children}
@@ -232,12 +227,12 @@ function Skeleton({ view }) {
       {view === 'grid' ? (
         <div className="grid grid-cols-5 gap-2">
           {Array.from({ length: 5 }).map((_, i) => (
-            <div key={i} className="h-64 bg-white rounded-xl" />
+            <div key={i} className="h-64 bg-surface rounded-xl" />
           ))}
         </div>
       ) : (
         Array.from({ length: 5 }).map((_, i) => (
-          <div key={i} className="h-24 bg-white rounded-xl" />
+          <div key={i} className="h-24 bg-surface rounded-xl" />
         ))
       )}
     </div>

@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
+import { useLiveQuery } from 'dexie-react-hooks';
 import { subjects as subjectRepo, settings } from '../../db/helpers';
 import { subjectStats } from '../../db/curriculum';
 import SubjectTree from './SubjectTree';
@@ -6,35 +7,30 @@ import SubjectEditor from './SubjectEditor';
 import BulkImportModal from './BulkImportModal';
 
 export default function CurriculumScreen() {
-  const [subjects, setSubjects] = useState([]);
-  const [activeId, setActiveId] = useState(null);
-  const [currentStdMap, setCurrentStdMap] = useState({});
+  // Everything below is live: add a subject, import standards, tweak the
+  // "current standard" from the Now screen… and this screen follows along.
+  const subjects = useLiveQuery(() => subjectRepo.all(), [], []);
+  const currentStdMap = useLiveQuery(
+    () => settings.get('currentStandardBySubject', {}),
+    [],
+    {}
+  );
+  const stats = useLiveQuery(async () => {
+    const out = {};
+    for (const sub of await subjectRepo.all()) out[sub.id] = await subjectStats(sub.id);
+    return out;
+  }, [], {});
+
+  const [pickedId, setActiveId] = useState(null);
+  const activeId = subjects.some(s => s.id === pickedId) ? pickedId : subjects[0]?.id ?? null;
   const [editingSubject, setEditingSubject] = useState(null);
   const [bulkOpen, setBulkOpen] = useState(false);
-  const [stats, setStats] = useState({});
-  const [treeKey, setTreeKey] = useState(0);
-
-  async function reload() {
-    const list = await subjectRepo.all();
-    setSubjects(list);
-    setActiveId(prev => (prev && list.some(s => s.id === prev) ? prev : list[0]?.id || null));
-
-    const map = await settings.get('currentStandardBySubject', {});
-    setCurrentStdMap(map);
-
-    const s = {};
-    for (const sub of list) s[sub.id] = await subjectStats(sub.id);
-    setStats(s);
-    setTreeKey(k => k + 1);
-  }
-
-  useEffect(() => { reload(); }, []);
 
   const active = subjects.find(s => s.id === activeId) || null;
 
   return (
     <div className="min-h-screen bg-slate-50 pb-28">
-      <header className="bg-white border-b border-slate-200 sticky top-0 z-10">
+      <header className="bg-surface border-b border-slate-200 sticky top-0 z-10">
         <div className="max-w-3xl mx-auto px-4 py-4 flex items-center justify-between gap-2">
           <div>
             <h1 className="text-xl font-bold text-slate-900">Curriculum Catalogue</h1>
@@ -53,7 +49,7 @@ export default function CurriculumScreen() {
             )}
             <button
               onClick={() => setEditingSubject({ isNew: true })}
-              className="px-3 py-2 rounded-lg bg-slate-900 text-white text-xs font-medium"
+              className="px-3 py-2 rounded-lg bg-primary text-on-primary text-xs font-medium"
             >
               + Subject
             </button>
@@ -67,8 +63,8 @@ export default function CurriculumScreen() {
               onClick={() => setActiveId(s.id)}
               className={`px-3 py-1.5 rounded-full text-sm whitespace-nowrap border transition ${
                 activeId === s.id
-                  ? 'bg-slate-900 text-white border-slate-900'
-                  : 'bg-white text-slate-700 border-slate-200 hover:border-slate-300'
+                  ? 'bg-primary text-on-primary border-primary'
+                  : 'bg-surface text-slate-700 border-slate-200 hover:border-slate-300'
               }`}
             >
               <span
@@ -104,14 +100,10 @@ export default function CurriculumScreen() {
             </div>
 
             <SubjectTree
-              key={`${active.id}-${treeKey}`}
+              key={active.id}
               subject={active}
               currentStandardId={currentStdMap[active.id]}
-              onSetCurrent={async (stdId) => {
-                await settings.setCurrentStandard(active.id, stdId);
-                setCurrentStdMap(prev => ({ ...prev, [active.id]: stdId }));
-              }}
-              onChanged={reload}
+              onSetCurrent={(stdId) => settings.setCurrentStandard(active.id, stdId)}
             />
           </>
         ) : (
@@ -123,7 +115,6 @@ export default function CurriculumScreen() {
         <SubjectEditor
           subject={editingSubject.isNew ? null : editingSubject}
           onClose={() => setEditingSubject(null)}
-          onSaved={reload}
         />
       )}
 
@@ -131,10 +122,7 @@ export default function CurriculumScreen() {
         <BulkImportModal
           subject={active}
           onClose={() => setBulkOpen(false)}
-          onImported={() => {
-            setBulkOpen(false);
-            reload();
-          }}
+          onImported={() => setBulkOpen(false)}
         />
       )}
     </div>
@@ -149,7 +137,7 @@ function EmptyState({ onAdd }) {
       <p className="text-sm text-slate-500 mt-1">Start by adding a subject.</p>
       <button
         onClick={onAdd}
-        className="mt-4 px-4 py-2 rounded-lg bg-slate-900 text-white text-sm"
+        className="mt-4 px-4 py-2 rounded-lg bg-primary text-on-primary text-sm"
       >
         + Add Subject
       </button>

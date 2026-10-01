@@ -31,7 +31,7 @@ export default function StandardEditor({ standard, onClose, onSaved }) {
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="bg-white w-full sm:max-w-lg max-h-[90vh] overflow-y-auto rounded-t-2xl sm:rounded-2xl p-5 shadow-xl"
+        className="bg-surface w-full sm:max-w-lg max-h-[90vh] overflow-y-auto rounded-t-2xl sm:rounded-2xl p-5 shadow-xl"
       >
         <h3 className="text-lg font-semibold mb-4">Edit Standard</h3>
 
@@ -91,7 +91,7 @@ export default function StandardEditor({ standard, onClose, onSaved }) {
           </button>
           <button
             onClick={save}
-            className="px-4 py-2 text-sm rounded-lg bg-slate-900 text-white"
+            className="px-4 py-2 text-sm rounded-lg bg-primary text-on-primary"
           >
             Save
           </button>

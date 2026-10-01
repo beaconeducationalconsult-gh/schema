@@ -5,8 +5,24 @@ import {
   importBackup,
   markExported,
 } from '../../db/backup';
+import { toast, confirmDialog } from '../../lib/dialogs';
 import { downloadFile } from '../../db/history';
 import { toDateKey } from '../../db/helpers';
+
+const sum = (o) => Object.values(o || {}).reduce((a, n) => a + n, 0);
+
+/** "Merged: 12 new, 30 already here (subjects:1 · lessons:11)" / "Restored: subjects:3 · …" */
+function describeImport({ mode, imported, skipped }) {
+  const detail = Object.entries(imported)
+    .filter(([, n]) => n > 0)
+    .map(([t, n]) => `${t}:${n}`)
+    .join(' · ');
+  if (mode !== 'merge') return `Restored: ${detail || 'nothing'}`;
+  const added = sum(imported);
+  const already = sum(skipped);
+  if (added === 0) return `Nothing new — everything in this backup is already here (${already} items).`;
+  return `Merged: ${added} new, ${already} already here${detail ? ` (${detail})` : ''}`;
+}
 
 export default function BackupSection({ onImported }) {
   const fileRef = useRef(null);
@@ -34,22 +50,22 @@ export default function BackupSection({ onImported }) {
 
   const doImport = async (mode) => {
     const file = fileRef.current?.files?.[0];
-    if (!file) return alert('Choose a backup .json file first.');
+    if (!file) return toast.error('Choose a backup .json file first.');
     if (mode === 'replace') {
-      if (!confirm('Replace ALL current data with the backup? This cannot be undone.'))
-        return;
+      const ok = await confirmDialog({
+        title: 'Replace all current data?',
+        message: 'Everything on this device will be overwritten by the backup. This cannot be undone.',
+        confirmLabel: 'Replace everything',
+        danger: true,
+      });
+      if (!ok) return;
     }
     setBusy(true);
     try {
       const text = await file.text();
       const obj = JSON.parse(text);
       const result = await importBackup(obj, { mode });
-      setLastMsg({
-        tone: 'ok',
-        text: `Imported (${mode}): ${Object.entries(result.imported)
-          .map(([t, n]) => `${t}:${n}`)
-          .join(' · ')}`,
-      });
+      setLastMsg({ tone: 'ok', text: describeImport(result) });
       onImported?.();
     } catch (e) {
       setLastMsg({ tone: 'err', text: e.message });
@@ -60,7 +76,7 @@ export default function BackupSection({ onImported }) {
   };
 
   return (
-    <section className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
+    <section className="bg-surface rounded-2xl border border-slate-200 p-5 shadow-sm">
       <h2 className="text-sm font-semibold text-slate-700 uppercase tracking-wide mb-1">
         💾 Backup & Restore
       </h2>
@@ -72,7 +88,7 @@ export default function BackupSection({ onImported }) {
       <button
         onClick={doExport}
         disabled={busy}
-        className="w-full py-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-sm font-medium disabled:opacity-40 mb-3"
+        className="w-full py-3 rounded-xl bg-primary hover:bg-primary-hover text-on-primary text-sm font-medium disabled:opacity-40 mb-3"
       >
         ⬇ Export backup (.json)
       </button>

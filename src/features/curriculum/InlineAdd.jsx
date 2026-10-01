@@ -35,7 +35,7 @@ export default function InlineAdd({ label, placeholder = 'Name…', onAdd }) {
       />
       <button
         onClick={submit}
-        className="text-xs px-2.5 py-1.5 rounded-lg bg-slate-900 text-white"
+        className="text-xs px-2.5 py-1.5 rounded-lg bg-primary text-on-primary"
       >
         Save
       </button>

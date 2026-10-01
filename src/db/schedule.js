@@ -35,8 +35,8 @@ export async function resolveStandardForSubject(subjectId) {
  * - subjects keyed by id
  * - existing lessons for the date range keyed by `${timetableId}:${date}`
  */
-export async function loadWeek(weekStart, { includeWeekend = false } = {}) {
-  const days = weekDays(weekStart, { includeWeekend });
+export async function loadWeek(weekStart, { includeWeekend = false, weekStartsOn = 1 } = {}) {
+  const days = weekDays(weekStart, { includeWeekend, weekStartsOn });
 
   const dayNumbers = days.map(d => {
     const g = d.getDay();      // 0..6 (Sun=0)
@@ -57,13 +57,9 @@ export async function loadWeek(weekStart, { includeWeekend = false } = {}) {
   // Existing lessons for the week (date in the range)
   const fromKey = toDateKey(days[0]);
   const toKey   = toDateKey(days[days.length - 1]);
-  const lessonsAll = await db.lessons.toArray();
+  const lessonsInWeek = await db.lessons.where('date').between(fromKey, toKey, true, true).toArray();
   const lessons = {};
-  for (const l of lessonsAll) {
-    if (l.date >= fromKey && l.date <= toKey) {
-      lessons[`${l.timetableId}:${l.date}`] = l;
-    }
-  }
+  for (const l of lessonsInWeek) lessons[`${l.timetableId}:${l.date}`] = l;
 
   // Group slots by dayNumber
   const slotsByDay = {};

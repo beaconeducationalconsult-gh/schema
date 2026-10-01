@@ -1,4 +1,7 @@
 import React, { useState } from 'react';
+import { useLiveQuery } from 'dexie-react-hooks';
+import { getSettings } from '../../db/settings';
+import { confirmDialog } from '../../lib/dialogs';
 import { timetable as timetableRepo } from '../../db/helpers';
 
 const DAYS = [
@@ -16,8 +19,11 @@ export default function SlotEditor({ slot, subjects, onClose, onSaved }) {
   const [startTime, setStartTime] = useState(slot?.startTime || '08:00');
   const [endTime, setEndTime] = useState(slot?.endTime || '08:40');
   const [subjectId, setSubjectId] = useState(slot?.subjectId || subjects[0]?.id || '');
-  const [classLevel, setClassLevel] = useState(slot?.classLevel || 'Basic 6');
-  const [room, setRoom] = useState(slot?.room || 'Rm 4');
+  // New slots default to the class level from the teacher's profile.
+  const profile = useLiveQuery(getSettings, []);
+  const [levelDraft, setClassLevel] = useState(null);
+  const classLevel = levelDraft ?? slot?.classLevel ?? profile?.classLevel ?? '';
+  const [room, setRoom] = useState(slot?.room || '');
 
   const save = async () => {
     if (!subjectId || !startTime || !endTime) return;
@@ -26,7 +32,7 @@ export default function SlotEditor({ slot, subjects, onClose, onSaved }) {
       startTime,
       endTime,
       subjectId: Number(subjectId),
-      classLevel: classLevel.trim() || 'Basic 6',
+      classLevel: classLevel.trim() || profile?.classLevel || '',
       room: room.trim(),
     };
     if (slot) {
@@ -39,7 +45,7 @@ export default function SlotEditor({ slot, subjects, onClose, onSaved }) {
 
   const remove = async () => {
     if (!slot) return;
-    if (!confirm('Delete this timetable slot?')) return;
+    if (!(await confirmDialog({ title: 'Delete this timetable slot?', confirmLabel: 'Delete', danger: true }))) return;
     await timetableRepo.remove(slot.id);
     onSaved?.();
   };
@@ -51,7 +57,7 @@ export default function SlotEditor({ slot, subjects, onClose, onSaved }) {
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="bg-white w-full sm:max-w-md rounded-t-2xl sm:rounded-2xl p-5 shadow-xl"
+        className="bg-surface w-full sm:max-w-md rounded-t-2xl sm:rounded-2xl p-5 shadow-xl"
       >
         <h3 className="text-lg font-semibold mb-4">
           {slot ? 'Edit Timetable Slot' : 'Add Timetable Slot'}
@@ -65,7 +71,7 @@ export default function SlotEditor({ slot, subjects, onClose, onSaved }) {
             <select
               value={dayOfWeek}
               onChange={(e) => setDayOfWeek(Number(e.target.value))}
-              className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm bg-white"
+              className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm bg-surface"
             >
               {DAYS.map(d => (
                 <option key={d.id} value={d.id}>{d.label}</option>
@@ -105,7 +111,7 @@ export default function SlotEditor({ slot, subjects, onClose, onSaved }) {
             <select
               value={subjectId}
               onChange={(e) => setSubjectId(Number(e.target.value))}
-              className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm bg-white"
+              className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm bg-surface"
             >
               {subjects.map(s => (
                 <option key={s.id} value={s.id}>{s.name}</option>
@@ -156,7 +162,7 @@ export default function SlotEditor({ slot, subjects, onClose, onSaved }) {
             <button
               onClick={save}
               disabled={!subjectId}
-              className="px-4 py-2 text-sm rounded-lg bg-slate-900 text-white disabled:opacity-40"
+              className="px-4 py-2 text-sm rounded-lg bg-primary text-on-primary disabled:opacity-40"
             >
               Save Slot
             </button>

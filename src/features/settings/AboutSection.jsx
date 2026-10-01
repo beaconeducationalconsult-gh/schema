@@ -2,7 +2,7 @@ import React from 'react';
 
 export default function AboutSection({ onReset }) {
   return (
-    <section className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
+    <section className="bg-surface rounded-2xl border border-slate-200 p-5 shadow-sm">
       <h2 className="text-sm font-semibold text-slate-700 uppercase tracking-wide mb-3">
         ℹ️ About
       </h2>

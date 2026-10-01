@@ -1,5 +1,8 @@
 import React, { useState } from 'react';
 import { subjects as subjectRepo } from '../../db/helpers';
+import { confirmDialog } from '../../lib/dialogs';
+import { db } from '../../db/schema';
+import { deleteStrand } from '../../db/curriculum';
 
 const COLORS = ['#2563eb','#dc2626','#16a34a','#9333ea','#ea580c','#0891b2','#4f46e5','#be185d'];
 const ICONS  = ['sigma','book','flask','globe','music','palette','code','leaf'];
@@ -23,9 +26,13 @@ export default function SubjectEditor({ subject, onClose, onSaved }) {
 
   const remove = async () => {
     if (!subject) return;
-    if (!confirm(`Delete "${subject.name}" and all its strands?`)) return;
-    const { db } = await import('../../db/schema');
-    const { deleteStrand } = await import('../../db/curriculum');
+    const ok = await confirmDialog({
+      title: `Delete "${subject.name}"?`,
+      message: 'All its strands, sub-strands and standards will be deleted too.',
+      confirmLabel: 'Delete',
+      danger: true,
+    });
+    if (!ok) return;
     const strands = await db.strands.where('subjectId').equals(subject.id).toArray();
     for (const s of strands) await deleteStrand(s.id);
     await subjectRepo.remove(subject.id);
@@ -40,7 +47,7 @@ export default function SubjectEditor({ subject, onClose, onSaved }) {
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="bg-white w-full sm:max-w-md rounded-t-2xl sm:rounded-2xl p-5 shadow-xl"
+        className="bg-surface w-full sm:max-w-md rounded-t-2xl sm:rounded-2xl p-5 shadow-xl"
       >
         <h3 className="text-lg font-semibold mb-4">
           {subject ? 'Edit Subject' : 'New Subject'}
@@ -66,7 +73,7 @@ export default function SubjectEditor({ subject, onClose, onSaved }) {
               key={c}
               onClick={() => setColor(c)}
               className={`w-8 h-8 rounded-full border-2 ${
-                color === c ? 'border-slate-900 scale-110' : 'border-transparent'
+                color === c ? 'border-primary scale-110' : 'border-transparent'
               }`}
               style={{ backgroundColor: c }}
             />
@@ -83,7 +90,7 @@ export default function SubjectEditor({ subject, onClose, onSaved }) {
               onClick={() => setIcon(ic)}
               className={`px-2.5 py-1 rounded-lg text-xs border ${
                 icon === ic
-                  ? 'bg-slate-900 text-white border-slate-900'
+                  ? 'bg-primary text-on-primary border-primary'
                   : 'border-slate-200 text-slate-600'
               }`}
             >
@@ -108,7 +115,7 @@ export default function SubjectEditor({ subject, onClose, onSaved }) {
             <button
               onClick={save}
               disabled={!name.trim()}
-              className="px-4 py-2 text-sm rounded-lg bg-slate-900 text-white disabled:opacity-40"
+              className="px-4 py-2 text-sm rounded-lg bg-primary text-on-primary disabled:opacity-40"
             >
               Save
             </button>

@@ -1,26 +1,27 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { notificationStatus, requestNotificationPermission } from '../../lib/reminders';
 
 export default function PrefsSection({ prefs, onChange }) {
   const set = (patch) => onChange({ ...prefs, ...patch });
 
   return (
-    <section className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
+    <section className="bg-surface rounded-2xl border border-slate-200 p-5 shadow-sm">
       <h2 className="text-sm font-semibold text-slate-700 uppercase tracking-wide mb-3">
         ⚙️ Preferences
       </h2>
 
-      <Row label="Week starts on">
+      <Row label="Week starts on" hint="Sunday-start weeks list Mon–Fri unless weekends are shown">
         <select
           value={prefs.weekStartsOn}
           onChange={(e) => set({ weekStartsOn: Number(e.target.value) })}
-          className="text-sm border border-slate-300 rounded-lg px-2.5 py-1.5 bg-white"
+          className="text-sm border border-slate-300 rounded-lg px-2.5 py-1.5 bg-surface"
         >
           <option value={1}>Monday</option>
           <option value={0}>Sunday</option>
         </select>
       </Row>
 
-      <Row label="Show weekends">
+      <Row label="Show weekends" hint="Week screen shows Sat and Sun">
         <input
           type="checkbox"
           checked={prefs.includeWeekend}
@@ -29,7 +30,7 @@ export default function PrefsSection({ prefs, onChange }) {
         />
       </Row>
 
-      <Row label="Default activity length">
+      <Row label="Default activity length" hint="Pre-filled when you add an activity">
         <div className="flex items-center gap-1">
           <input
             type="number"
@@ -43,7 +44,10 @@ export default function PrefsSection({ prefs, onChange }) {
         </div>
       </Row>
 
-      <Row label="Reminder before class">
+      <Row
+        label="Reminder before class"
+        hint="Toast + chime while the app is open. 0 turns reminders off."
+      >
         <div className="flex items-center gap-1">
           <input
             type="number"
@@ -56,7 +60,37 @@ export default function PrefsSection({ prefs, onChange }) {
           <span className="text-xs text-slate-500">min</span>
         </div>
       </Row>
+
+      <NotificationRow />
     </section>
+  );
+}
+
+/** Optional system notifications for the class reminder (per device, asked on click). */
+function NotificationRow() {
+  const [status, setStatus] = useState(notificationStatus);
+  if (status === 'unsupported') return null;
+
+  const hints = {
+    default: 'Also get a system notification when the app is in the background.',
+    granted: 'On — reminders also appear as system notifications.',
+    denied: 'Blocked. Allow notifications for this site in your browser settings.',
+  };
+  return (
+    <Row label="Notifications" hint={hints[status]}>
+      {status === 'granted' ? (
+        <span className="text-xs font-semibold text-emerald-700">On</span>
+      ) : (
+        <button
+          type="button"
+          disabled={status === 'denied'}
+          onClick={async () => setStatus(await requestNotificationPermission())}
+          className="text-xs px-3 py-1.5 rounded-lg border border-slate-300 text-slate-700 hover:bg-slate-100 disabled:opacity-40"
+        >
+          Enable
+        </button>
+      )}
+    </Row>
   );
 }
 

@@ -8,6 +8,17 @@ import {
   BAR_CHART_SVG,
 } from '../lib/classroomMedia';
 
+const DEMO_PROFILE = {
+  schoolName: 'Demo Basic School',
+  classLevel: 'Basic 6',
+  teacherName: 'Mr. Kofi Mensah',
+};
+
+/**
+ * Loads the demo curriculum, timetable and sample lessons — but only into an
+ * empty database. Called from onboarding ("Explore with demo data") and from
+ * Settings → Reset. It is no longer run automatically on first launch.
+ */
 export async function seedIfEmpty() {
   const count = await db.subjects.count();
   if (count > 0) {
@@ -215,10 +226,6 @@ export async function seedIfEmpty() {
 
       /* ---- Settings ---- */
       await db.settings.bulkPut([
-        { key: 'schoolName', value: 'Achimota Basic School' },
-        { key: 'classLevel', value: 'Basic 6' },
-        { key: 'teacherName', value: 'Mr. Kofi Mensah' },
-        { key: 'academicYear', value: '2026/2027' },
         {
           key: 'currentStandardBySubject',
           value: {
@@ -230,6 +237,11 @@ export async function seedIfEmpty() {
         },
         { key: 'seededAt', value: Date.now() },
       ]);
+      // Demo profile — only fills blanks, never overwrites what the teacher entered.
+      for (const [key, value] of Object.entries(DEMO_PROFILE)) {
+        const row = await db.settings.get(key);
+        if (!row?.value) await db.settings.put({ key, value });
+      }
 
       /* ---- Timetable (Mon–Fri demo) ---- */
       const slots = [

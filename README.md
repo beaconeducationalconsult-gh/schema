@@ -1,19 +1,81 @@
-# React + Vite
+# Schema – Teaching Companion
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+An offline-first Progressive Web App that answers one question for a teacher: **"What am I teaching, right now?"**
 
-Currently, two official plugins are available:
+It matches your weekly timetable to your curriculum (NaCCA-style strands, sub-strands, standards and indicators), builds lessons from activity blocks, and keeps a history of what you have taught. There is no backend. All data stays in the browser (IndexedDB) and can be exported as a JSON backup.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Features
 
-## React Compiler
+- **Now** – current timetable slot with a **countdown ring** (time left in class, then the last 15 minutes before the next one), the active standard, and quick-add lesson activities
+- **Schedule** – weekly timetable (grid and day list) with a slot editor
+- **Curriculum** – Subject → Strand → Sub-strand → Standard tree, with bulk text import
+- **Lesson** – activity blocks (exercise, correction, image observation, video, reading, discussion, assignment), one-tap routine templates, guided mode with timers, and a print view
+- **Notes**, **History** (filters, stats, CSV export) and **Settings** (profile, terms, preferences, backup/restore, storage)
+- **Class reminders** – a toast, chime and optional system notification a set number of minutes before each class
+- Bottom nav with four everyday tabs and a **More** menu (History, Settings, projector toggle)
+- Installable PWA with offline support and update prompts
 
-The React Compiler is enabled on this template. See [this documentation](https://react.dev/learn/react-compiler) for more information.
+## Tech stack
 
-Note: This will impact Vite dev & build performances.
-You can also try [the experimental native React Compiler support in plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md#rust-react-compiler) by using `compiler: true` in the plugin options instead of using the Babel plugin.
+React 19 (with React Compiler) · Vite 8 · React Router 7 · Tailwind CSS 4 · Dexie 4 (IndexedDB) · vite-plugin-pwa / Workbox · Oxlint
 
-## Expanding the Oxlint configuration
+## Getting started
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and Oxlint's TypeScript related rules in your project.
+Requires Node.js and [pnpm](https://pnpm.io).
+
+```bash
+pnpm install
+pnpm dev        # http://localhost:5173
+pnpm build      # production build to dist/
+pnpm preview    # serve the build on :4173
+pnpm lint
+pnpm test       # Vitest: db layer + date helpers (fake-indexeddb) and jsdom UI tests (Testing Library)
+pnpm theme:gen  # regenerate src/theme.css (see Theming)
+```
+
+On first launch a short **onboarding wizard** asks for your name, school, class, subjects and term dates (every step is skippable). Demo data (Achimota Basic School, Basic 6, sample timetable and lessons) is **opt-in** from the wizard or from **Settings → Backup → Reset to demo data**. Existing installs that already have subjects skip the wizard automatically. Use **Settings → Backup** to export or restore your data.
+
+### Live data
+Screens read IndexedDB through Dexie live queries (`useLiveQuery`), so anything written from another screen, tab or a backup import shows up without a reload. Writes never happen inside a live-query function; creating "today's lesson" for the Now screen happens in an effect (`src/db/now.js`).
+
+### Preferences
+Settings → Preferences drives real behaviour: **Week starts on** and **Show weekends** shape the Week screen (the screen's own "Include weekend" checkbox writes the same preference; an old per-browser toggle is migrated once), **Default activity length** pre-fills the quick-add forms, and **Reminder before class** drives reminders. Read them with `usePrefs()`; write partial updates with `savePrefs(patch)` (`src/db/settings.js`).
+
+### Class reminders
+**Settings → Preferences → Reminder before class** sets the lead time in minutes (default 5; `0` switches reminders off). `ClassReminders` (mounted in `App`) checks today's slots every 10 s and shows a toast with an *Open* action plus a chime when the window is focused; if the window is hidden or unfocused it sends a system notification instead, once you press **Enable** under *Notifications* (per device). Each reminder fires once per class per day (tracked in `localStorage` key `tc-reminded`, shared between tabs). The pure logic lives in `src/lib/reminders.js`.
+
+Limitation: there is no backend or push service, so reminders only fire while the app is open (a tab or the installed PWA window, including in the background). They cannot wake a fully closed app.
+
+Tapping a system notification focuses the open app window (or opens the app if it was closed). That comes from a small `notificationclick` handler in `public/sw-notifications.js`, pulled into the generated service worker with Workbox `importScripts` (`vite.config.js`); the window then routes itself when it receives the worker's `tc-navigate` message. Only same-origin paths are accepted.
+
+### Theming (dark and projector mode)
+**Settings → Display** offers *System / Light / Dark* and a *Projector mode* switch (larger type, stronger contrast; also a button in guided lesson mode). Both are stored per device in `localStorage` (`tc-theme`, `tc-projector`), applied before first paint by an inline script in `index.html`, and are not part of backups.
+
+Rather than adding `dark:` variants to every class, dark mode **re-maps the Tailwind palette variables** under `html.dark` (`src/theme.css`, generated by `scripts/gen-theme-css.mjs`):
+- Use `bg-surface` for cards/modals (not `bg-white`) and `bg-primary text-on-primary` for primary buttons (not `bg-slate-900 text-white`). A test fails if `bg-white` or `bg-slate-900 … text-white` reappears.
+- If you use a new `text-<hue>-600…900` class, run `pnpm theme:gen` (a test checks the file is current).
+- Wrap always-dark areas (guided mode, toasts, the Now status banner) in `.palette-fixed` to keep the light-mode palette there.
+- Printing always uses the light palette.
+
+## Project structure
+
+```
+src/
+  db/          Dexie schema, repositories, seed data, backup, history queries
+  features/    One folder per screen (now, schedule, curriculum, lesson, notes, history, settings,
+               onboarding). Screens are thin orchestrators; each card/panel is its own file, e.g.
+               now/{StatusBanner,ClassCard,CurriculumCard,ActivityPromptBar,…}.jsx and
+               lesson/{LessonToolbar,LessonHeader,StandardCard,TeachingPlan,NotesPanel,…}.jsx
+  components/  Shared modals, resource gallery, navigation, dialogs, class reminders
+  lib/         activityMeta, countdown, reminders, theme, week/date helpers, routine templates, media
+  hooks/       useNow, useWakeLock
+  pwa/         Service-worker registration, banners, persistent storage
+tests/         Vitest specs
+public/        Icons, offline page, robots.txt
+```
+
+### Data model
+
+`subjects → strands → subStrands → standards` form the curriculum. `timetable` slots reference a subject. `lessons` reference a standard and a slot on a date, and own `activities`. `notes` and `resources` attach to lessons or standards. `settings` is a key/value table.
+
+The database name is `TeachingCompanion` (schema version 2 in `src/db/schema.js`). Any change to indexed fields needs a new `db.version(n)`; `tests/schema-migration.test.js` shows how to test an upgrade. Backups are validated on import, and **merge** mode re-links foreign keys so ids from another device never collide. Merge is also **idempotent**: rows that already exist (matched by name/slot/date/content within their parent, see `MERGE_ORDER` in `src/db/backup.js`) are skipped and kept as they are, so importing the same backup twice adds nothing, and Settings reports how many items were new versus already there.

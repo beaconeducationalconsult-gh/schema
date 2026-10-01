@@ -1,10 +1,14 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { activityRepo } from '../../db/helpers';
-import { ACTIVITY_META } from './LessonScreen';
+import { ACTIVITY_META } from '../../lib/activityMeta';
+import { Presentation } from 'lucide-react';
+import { useDisplay, setProjector } from '../../lib/theme';
+import { useWakeLock } from '../../hooks/useWakeLock';
+import { playChime, primeAudio } from '../../lib/chime';
 import ResourceGallery from '../../components/ResourceGallery';
 import CompleteLessonModal from '../../components/CompleteLessonModal';
 
-export default function GuidedMode({ data, onExit, onProgress }) {
+export default function GuidedMode({ data, onExit }) {
   const { subject, standard, activities, resources = [] } = data;
   const [index, setIndex] = useState(() => {
     const first = activities.findIndex(a => !a.done);
@@ -16,15 +20,18 @@ export default function GuidedMode({ data, onExit, onProgress }) {
   const [showMedia, setShowMedia] = useState(false);
   const [completeOpen, setCompleteOpen] = useState(false);
   const tickRef = useRef(null);
+  const { projector } = useDisplay();
 
   const current = activities[index];
 
-  // Reset timer whenever the step changes
-  useEffect(() => {
-    if (!current) return;
+  // Reset the timer whenever the step changes. Adjusting state while rendering
+  // (instead of in an effect) avoids painting one frame with the old step's time.
+  const [timerStepId, setTimerStepId] = useState(null);
+  if (current && timerStepId !== current.id) {
+    setTimerStepId(current.id);
     setSecondsLeft((current.duration || 0) * 60);
     setRunning(false);
-  }, [current?.id]);
+  }
 
   // Countdown
   useEffect(() => {
@@ -41,15 +48,42 @@ export default function GuidedMode({ data, onExit, onProgress }) {
     return () => clearInterval(tickRef.current);
   }, [running]);
 
+  // Keep the projector / tablet awake for the whole guided session
+  useWakeLock(true);
+
+  // Chime when a running timer reaches zero
+  const prevSeconds = useRef(secondsLeft);
+  useEffect(() => {
+    if (prevSeconds.current > 0 && secondsLeft === 0 && current?.duration) playChime();
+    prevSeconds.current = secondsLeft;
+  }, [secondsLeft, current?.duration]);
+
+  // Keyboard: ← / → to move between steps, Space to start/pause the timer
+  useEffect(() => {
+    const onKey = (e) => {
+      if (completeOpen) return;
+      const tag = e.target?.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || e.target?.isContentEditable) return;
+      if (e.key === 'ArrowRight') setIndex(i => Math.min(i + 1, activities.length - 1));
+      else if (e.key === 'ArrowLeft') setIndex(i => Math.max(i - 1, 0));
+      else if (e.key === ' ' && tag !== 'BUTTON') {
+        e.preventDefault();
+        setRunning(r => !r);
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [activities.length, completeOpen]);
+
   if (!current) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-900 text-white p-6">
+      <div className="min-h-screen flex items-center justify-center bg-primary text-on-primary p-6">
         <div className="text-center">
           <div className="text-5xl mb-3">🎉</div>
           <h2 className="text-xl font-semibold">No activities to run</h2>
           <button
             onClick={onExit}
-            className="mt-4 px-4 py-2 rounded-lg bg-white text-slate-900 text-sm font-medium"
+            className="mt-4 px-4 py-2 rounded-lg bg-surface text-slate-900 text-sm font-medium"
           >
             Back to lesson
           </button>
@@ -73,7 +107,6 @@ export default function GuidedMode({ data, onExit, onProgress }) {
   };
   const markDone = async () => {
     await activityRepo.update(current.id, { done: true });
-    onProgress?.();
     if (index < activities.length - 1) {
       next();
     } else {
@@ -83,10 +116,10 @@ export default function GuidedMode({ data, onExit, onProgress }) {
   };
 
   return (
-    <div className="min-h-screen bg-slate-900 text-white flex flex-col">
+    <div className="palette-fixed min-h-screen bg-primary text-on-primary flex flex-col">
       {/* Top bar */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-white/10">
-        <button onClick={onExit} className="text-sm text-white/70 hover:text-white">
+        <button onClick={onExit} className="text-sm text-white/70 hover:text-white" aria-label="Exit guided mode">
           ✕ Exit
         </button>
         <div className="text-center">
@@ -106,6 +139,15 @@ export default function GuidedMode({ data, onExit, onProgress }) {
               🖼️ Media ({resources.length})
             </button>
           )}
+          <button
+            onClick={() => setProjector(!projector)}
+            aria-pressed={projector}
+            title="Projector mode: larger text"
+            aria-label="Toggle projector mode"
+            className={`p-1.5 rounded-lg ${projector ? 'bg-white/20 text-white' : 'text-white/60 hover:text-white'}`}
+          >
+            <Presentation size={18} />
+          </button>
           <button
             onClick={() => setShowPlan(s => !s)}
             className="text-sm text-white/70 hover:text-white"
@@ -162,12 +204,12 @@ export default function GuidedMode({ data, onExit, onProgress }) {
         <div className="text-[10px] uppercase tracking-widest text-white/50">
           {meta.label} · {current.duration} min
         </div>
-        <h1 className="text-2xl font-bold text-center mt-2 max-w-2xl">
+        <h1 className="text-2xl projector:text-4xl font-bold text-center mt-2 max-w-2xl">
           {current.title}
         </h1>
 
         {current.content && (
-          <p className="text-white/80 text-center mt-3 max-w-2xl whitespace-pre-wrap text-lg leading-relaxed">
+          <p className="text-white/80 text-center mt-3 max-w-2xl projector:max-w-4xl whitespace-pre-wrap text-lg projector:text-2xl leading-relaxed">
             {current.content}
           </p>
         )}
@@ -181,9 +223,22 @@ export default function GuidedMode({ data, onExit, onProgress }) {
 
         {/* Timer */}
         <div className="mt-8 text-center">
-          <div className="text-6xl font-mono tabular-nums">{fmt(secondsLeft)}</div>
+          <div
+            className={`text-6xl projector:text-8xl font-mono tabular-nums transition-colors ${
+              secondsLeft === 0 && current.duration
+                ? 'text-rose-400 animate-pulse'
+                : running && secondsLeft <= 60
+                  ? 'text-amber-300'
+                  : ''
+            }`}
+            role="timer"
+            aria-live="off"
+          >
+            {fmt(secondsLeft)}
+          </div>
           <div className="text-xs text-white/40 mt-1">
             {secondsLeft > 0 ? 'remaining' : 'time up'}
+            <span className="hidden sm:inline"> · ← → steps · space timer</span>
           </div>
           <div className="w-64 h-1.5 bg-white/10 rounded-full mt-3 overflow-hidden mx-auto">
             <div
@@ -195,7 +250,10 @@ export default function GuidedMode({ data, onExit, onProgress }) {
 
         <div className="flex gap-3 mt-6">
           <button
-            onClick={() => setRunning(r => !r)}
+            onClick={() => {
+              primeAudio();
+              setRunning(r => !r);
+            }}
             className="px-5 py-2 rounded-lg bg-white/10 hover:bg-white/20 text-sm font-medium"
           >
             {running ? '⏸ Pause' : '▶ Start Timer'}
@@ -242,8 +300,7 @@ export default function GuidedMode({ data, onExit, onProgress }) {
           onClose={() => setCompleteOpen(false)}
           onCompleted={() => {
             setCompleteOpen(false);
-            onProgress?.();
-            onExit();
+                    onExit();
           }}
         />
       )}

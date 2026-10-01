@@ -1,4 +1,14 @@
 @import "tailwindcss";
+@import "./theme.css"; /* generated: dark palette, .palette-fixed, projector mode */
+
+/* Semantic colour tokens. Use these (not raw white/slate-900) for surfaces and
+   primary buttons so dark mode can swap them. */
+@theme {
+  --color-surface: #ffffff;
+  --color-primary: #0f172a;
+  --color-primary-hover: #1e293b;
+  --color-on-primary: #ffffff;
+}
 
 @media print {
   body { background: white; }

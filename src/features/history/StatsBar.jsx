@@ -1,5 +1,5 @@
 import React from 'react';
-import { ACTIVITY_META } from '../lesson/LessonScreen';
+import { ACTIVITY_META } from '../../lib/activityMeta';
 
 export default function StatsBar({ stats }) {
   const topTypes = Object.entries(stats.byActivityType)
@@ -7,7 +7,7 @@ export default function StatsBar({ stats }) {
     .slice(0, 7);
 
   return (
-    <div className="bg-white rounded-2xl border border-slate-200 p-4 space-y-4 shadow-sm">
+    <div className="bg-surface rounded-2xl border border-slate-200 p-4 space-y-4 shadow-sm">
       <div className="grid grid-cols-3 gap-2">
         <Tile label="Lessons" value={stats.totalLessons} />
         <Tile label="Completed" value={stats.completed} accent />

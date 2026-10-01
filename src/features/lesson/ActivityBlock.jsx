@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { activityRepo } from '../../db/helpers';
-import { ACTIVITY_META } from './LessonScreen';
+import { confirmDialog } from '../../lib/dialogs';
+import { ACTIVITY_META } from '../../lib/activityMeta';
 
-export default function ActivityBlock({ activity, index, onMoveUp, onMoveDown, onReload }) {
+export default function ActivityBlock({ activity, index, onMoveUp, onMoveDown }) {
   const meta = ACTIVITY_META[activity.type] || ACTIVITY_META.exercise;
   const [editing, setEditing] = useState(false);
   const [title, setTitle] = useState(activity.title || meta.label);
@@ -17,25 +18,22 @@ export default function ActivityBlock({ activity, index, onMoveUp, onMoveDown, o
       duration: Number(duration) || 0,
     });
     setEditing(false);
-    onReload?.();
   };
 
   const toggleDone = async () => {
     const next = !done;
     setDone(next);
     await activityRepo.update(activity.id, { done: next });
-    onReload?.();
   };
 
   const remove = async () => {
-    if (!confirm('Delete this activity?')) return;
+    if (!(await confirmDialog({ title: 'Delete this activity?', confirmLabel: 'Delete', danger: true }))) return;
     await activityRepo.remove(activity.id);
-    onReload?.();
   };
 
   return (
     <div
-      className={`bg-white rounded-2xl border shadow-sm ${
+      className={`bg-surface rounded-2xl border shadow-sm ${
         done ? 'border-emerald-200 bg-emerald-50/30 opacity-80' : 'border-slate-200'
       } p-4 print:break-inside-avoid`}
     >
@@ -84,7 +82,7 @@ export default function ActivityBlock({ activity, index, onMoveUp, onMoveDown, o
               <div className="flex gap-2">
                 <button
                   onClick={save}
-                  className="px-3 py-1.5 text-xs rounded-lg bg-slate-900 text-white"
+                  className="px-3 py-1.5 text-xs rounded-lg bg-primary text-on-primary"
                 >
                   Save
                 </button>

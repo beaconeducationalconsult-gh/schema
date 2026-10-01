@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { ACTIVITY_META } from '../lesson/LessonScreen';
+import { ACTIVITY_META } from '../../lib/activityMeta';
 
 const STATUS_STYLES = {
   planned:     'bg-slate-100 text-slate-600',
@@ -13,7 +13,7 @@ export default function LessonRow({ row }) {
   const { lesson, slot, subject, standard, activities, notes, totalMin, doneCount } = row;
 
   return (
-    <li className="bg-white rounded-2xl border border-slate-200 hover:border-slate-300 transition shadow-sm">
+    <li className="bg-surface rounded-2xl border border-slate-200 hover:border-slate-300 transition shadow-sm">
       <Link to={`/lesson/${lesson.id}`} className="block p-4">
         <div className="flex items-start gap-3">
           <span

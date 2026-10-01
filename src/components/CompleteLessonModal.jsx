@@ -78,7 +78,7 @@ export default function CompleteLessonModal({
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="bg-white w-full sm:max-w-lg max-h-[92vh] overflow-y-auto rounded-t-2xl sm:rounded-2xl p-5 shadow-2xl"
+        className="bg-surface w-full sm:max-w-lg max-h-[92vh] overflow-y-auto rounded-t-2xl sm:rounded-2xl p-5 shadow-2xl"
       >
         <div className="flex items-center justify-between mb-2">
           <span className="text-xs font-semibold uppercase tracking-wider text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-full">
@@ -185,8 +185,8 @@ export default function CompleteLessonModal({
                   onClick={() => setTag(t)}
                   className={`text-[10px] px-2 py-0.5 rounded-full border ${
                     tag === t
-                      ? 'bg-slate-900 text-white border-slate-900'
-                      : 'bg-white text-slate-500 border-slate-200'
+                      ? 'bg-primary text-on-primary border-primary'
+                      : 'bg-surface text-slate-500 border-slate-200'
                   }`}
                 >
                   #{t}

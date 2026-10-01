@@ -20,7 +20,7 @@ export default function Filters({ filters, setFilters, subjects }) {
   const set = (patch) => setFilters(f => ({ ...f, ...patch }));
 
   return (
-    <div className="bg-white rounded-2xl border border-slate-200 p-4 space-y-3 shadow-sm">
+    <div className="bg-surface rounded-2xl border border-slate-200 p-4 space-y-3 shadow-sm">
       <div className="flex gap-1.5 flex-wrap">
         {RANGES.map(r => (
           <button
@@ -28,8 +28,8 @@ export default function Filters({ filters, setFilters, subjects }) {
             onClick={() => set({ range: r.id })}
             className={`px-3 py-1.5 rounded-full text-xs border transition ${
               filters.range === r.id
-                ? 'bg-slate-900 text-white border-slate-900 font-medium'
-                : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300'
+                ? 'bg-primary text-on-primary border-primary font-medium'
+                : 'bg-surface text-slate-600 border-slate-200 hover:border-slate-300'
             }`}
           >
             {r.label}
@@ -59,7 +59,7 @@ export default function Filters({ filters, setFilters, subjects }) {
         <select
           value={filters.subjectId ?? ''}
           onChange={(e) => set({ subjectId: e.target.value ? Number(e.target.value) : null })}
-          className="text-xs border border-slate-300 rounded-lg px-2.5 py-1.5 bg-white"
+          className="text-xs border border-slate-300 rounded-lg px-2.5 py-1.5 bg-surface"
         >
           <option value="">All subjects</option>
           {subjects.map(s => (
@@ -70,7 +70,7 @@ export default function Filters({ filters, setFilters, subjects }) {
         <select
           value={filters.status ?? ''}
           onChange={(e) => set({ status: e.target.value || null })}
-          className="text-xs border border-slate-300 rounded-lg px-2.5 py-1.5 bg-white"
+          className="text-xs border border-slate-300 rounded-lg px-2.5 py-1.5 bg-surface"
         >
           {STATUSES.map(s => (
             <option key={String(s.id)} value={s.id ?? ''}>{s.label}</option>
@@ -80,7 +80,7 @@ export default function Filters({ filters, setFilters, subjects }) {
         <select
           value={filters.sort}
           onChange={(e) => set({ sort: e.target.value })}
-          className="text-xs border border-slate-300 rounded-lg px-2.5 py-1.5 bg-white"
+          className="text-xs border border-slate-300 rounded-lg px-2.5 py-1.5 bg-surface"
         >
           <option value="desc">Newest first</option>
           <option value="asc">Oldest first</option>

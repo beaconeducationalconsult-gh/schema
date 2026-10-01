@@ -1,22 +1,21 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
+import { useLiveQuery } from 'dexie-react-hooks';
 import { resources as resourceRepo } from '../db/helpers';
 import { PRESET_DIAGRAMS } from '../lib/classroomMedia';
 
 export default function ResourceManagerModal({ standard, onClose, onChanged }) {
-  const [items, setItems] = useState([]);
   const [tab, setTab] = useState('upload'); // 'upload' | 'presets' | 'link'
   const [type, setType] = useState('video');
   const [url, setUrl] = useState('');
   const [caption, setCaption] = useState('');
   const [uploadPreview, setUploadPreview] = useState(null);
 
-  const reload = async () => {
-    if (!standard?.id) return;
-    const list = await resourceRepo.byStandard(standard.id);
-    setItems(list);
-  };
-
-  useEffect(() => { reload(); }, [standard?.id]);
+  // Live: updates itself after every add / remove / caption edit.
+  const items = useLiveQuery(
+    () => (standard?.id ? resourceRepo.byStandard(standard.id) : []),
+    [standard?.id],
+    []
+  );
 
   const handleFileChange = (e) => {
     const file = e.target.files?.[0];
@@ -39,7 +38,6 @@ export default function ResourceManagerModal({ standard, onClose, onChanged }) {
     });
     setUploadPreview(null);
     setCaption('');
-    await reload();
     onChanged?.();
   };
 
@@ -51,7 +49,6 @@ export default function ResourceManagerModal({ standard, onClose, onChanged }) {
       url: preset.url,
       caption: preset.caption,
     });
-    await reload();
     onChanged?.();
   };
 
@@ -65,13 +62,11 @@ export default function ResourceManagerModal({ standard, onClose, onChanged }) {
     });
     setUrl('');
     setCaption('');
-    await reload();
     onChanged?.();
   };
 
   const remove = async (id) => {
     await resourceRepo.remove(id);
-    await reload();
     onChanged?.();
   };
 
@@ -82,7 +77,7 @@ export default function ResourceManagerModal({ standard, onClose, onChanged }) {
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="bg-white w-full sm:max-w-xl max-h-[90vh] overflow-y-auto rounded-t-2xl sm:rounded-2xl p-5 shadow-xl"
+        className="bg-surface w-full sm:max-w-xl max-h-[90vh] overflow-y-auto rounded-t-2xl sm:rounded-2xl p-5 shadow-xl"
       >
         <div className="flex items-start justify-between gap-2 mb-3">
           <div>
@@ -117,7 +112,7 @@ export default function ResourceManagerModal({ standard, onClose, onChanged }) {
                     <img
                       src={item.url}
                       alt={item.caption}
-                      className="w-14 h-10 object-cover rounded-lg bg-slate-900 shrink-0"
+                      className="w-14 h-10 object-cover rounded-lg bg-zinc-900 shrink-0"
                     />
                   ) : (
                     <span className="w-10 h-10 rounded-lg bg-slate-200 flex items-center justify-center text-lg shrink-0">
@@ -164,7 +159,7 @@ export default function ResourceManagerModal({ standard, onClose, onChanged }) {
               type="file"
               accept="image/*"
               onChange={handleFileChange}
-              className="w-full text-xs file:mr-3 file:py-2 file:px-3 file:rounded-lg file:border-0 file:bg-slate-900 file:text-white"
+              className="w-full text-xs file:mr-3 file:py-2 file:px-3 file:rounded-lg file:border-0 file:bg-primary file:text-on-primary"
             />
             {uploadPreview && (
               <img
@@ -182,7 +177,7 @@ export default function ResourceManagerModal({ standard, onClose, onChanged }) {
             <button
               onClick={saveUploadedImage}
               disabled={!uploadPreview}
-              className="w-full py-2.5 rounded-xl bg-slate-900 text-white text-sm font-medium disabled:opacity-40"
+              className="w-full py-2.5 rounded-xl bg-primary text-on-primary text-sm font-medium disabled:opacity-40"
             >
               Attach Image to Standard
             </button>
@@ -202,7 +197,7 @@ export default function ResourceManagerModal({ standard, onClose, onChanged }) {
                 <img
                   src={p.url}
                   alt={p.caption}
-                  className="w-20 h-12 object-contain rounded bg-slate-900 shrink-0"
+                  className="w-20 h-12 object-contain rounded bg-zinc-900 shrink-0"
                 />
                 <div className="flex-1 min-w-0">
                   <div className="text-xs font-medium text-slate-800 truncate">
@@ -212,7 +207,7 @@ export default function ResourceManagerModal({ standard, onClose, onChanged }) {
                 </div>
                 <button
                   onClick={() => addPreset(p)}
-                  className="px-3 py-1.5 rounded-lg bg-slate-900 text-white text-xs shrink-0"
+                  className="px-3 py-1.5 rounded-lg bg-primary text-on-primary text-xs shrink-0"
                 >
                   + Attach
                 </button>
@@ -230,8 +225,8 @@ export default function ResourceManagerModal({ standard, onClose, onChanged }) {
                   onClick={() => setType(t)}
                   className={`py-1.5 rounded-lg text-xs font-medium uppercase border ${
                     type === t
-                      ? 'bg-slate-900 text-white border-slate-900'
-                      : 'bg-white text-slate-600 border-slate-200'
+                      ? 'bg-primary text-on-primary border-primary'
+                      : 'bg-surface text-slate-600 border-slate-200'
                   }`}
                 >
                   {t}
@@ -253,7 +248,7 @@ export default function ResourceManagerModal({ standard, onClose, onChanged }) {
             <button
               onClick={saveLink}
               disabled={!url.trim()}
-              className="w-full py-2.5 rounded-xl bg-slate-900 text-white text-sm font-medium disabled:opacity-40"
+              className="w-full py-2.5 rounded-xl bg-primary text-on-primary text-sm font-medium disabled:opacity-40"
             >
               Add Resource Link
             </button>
@@ -278,7 +273,7 @@ function TabBtn({ active, onClick, children }) {
     <button
       onClick={onClick}
       className={`flex-1 py-1.5 text-xs rounded-lg font-medium transition ${
-        active ? 'bg-white shadow text-slate-900' : 'text-slate-500'
+        active ? 'bg-surface shadow text-slate-900' : 'text-slate-500'
       }`}
     >
       {children}
