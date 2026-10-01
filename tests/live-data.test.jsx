@@ -44,10 +44,20 @@ describe('live data (no manual reloads)', { timeout: 20000 }, () => {
 
   it('Now: activities and notes added elsewhere show up immediately', async () => {
     renderAt('/');
-    // Wait for the Now screen to load its context, then read the lesson id off its "Open Lesson Plan" link.
-    await screen.findByText(/What I.m Teaching/, {}, { timeout: 4000 });
-    const href = screen.getAllByText('Open Lesson Plan')[0].closest('a').getAttribute('href');
-    const lesson = { id: Number(href.split('/').pop()) };
+    // Wait for the Now screen to load its context, then read the lesson id off its plan link.
+    // Phase 2 hero shows "Teaching steps" / "View plan" / "Teach Now" instead of the old "What I'm Teaching" / "Open Lesson Plan".
+    await waitFor(async () => {
+      const hasOld = screen.queryByText(/What I.m Teaching/);
+      const hasNew = screen.queryByText(/Teaching steps/);
+      if (!hasOld && !hasNew) throw new Error('Now hero not yet rendered');
+    }, { timeout: 4000 });
+    const planLink =
+      screen.queryAllByText('View plan')[0]?.closest('a') ||
+      screen.queryAllByText('Teach Now')[0]?.closest('a') ||
+      screen.queryAllByText('Open Lesson Plan')[0]?.closest('a');
+    const href = planLink.getAttribute('href');
+    const lessonIdStr = href.includes('?') ? href.split('?')[0].split('/').pop() : href.split('/').pop();
+    const lesson = { id: Number(lessonIdStr) };
 
     await act(async () => {
       await activityRepo.add({ lessonId: lesson.id, type: 'exercise', title: 'Live Added Activity', content: '', duration: 5, done: false });

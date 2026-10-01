@@ -45,14 +45,14 @@ export default function AppHeader() {
         </div>
 
         <div className="flex items-center gap-1.5">
-          <Link
-            to="/curriculum"
-            aria-label="Search curriculum"
+          <button
+            onClick={() => window.dispatchEvent(new CustomEvent('tc-open-palette'))}
+            aria-label="Search"
             className="w-9 h-9 rounded-xl border border-slate-200 hover:bg-slate-50 flex items-center justify-center text-slate-600"
-            title="Search standards"
+            title="Search (⌘K)"
           >
             <Search size={16} />
-          </Link>
+          </button>
           <Link
             to="/settings"
             aria-label="Settings"

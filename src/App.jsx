@@ -3,6 +3,7 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import NowScreen from './features/now/NowScreen';
 import AppNav from './components/AppNav';
 import AppHeader from './components/AppHeader';
+import CommandPalette from './components/CommandPalette';
 import DialogHost from './components/DialogHost';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { isOnboarded } from './db/settings';
@@ -64,6 +65,7 @@ export default function App() {
       <PwaBanners />
       <DialogHost />
       <AppNav />
+      <CommandPalette />
     </>
   );
 }
