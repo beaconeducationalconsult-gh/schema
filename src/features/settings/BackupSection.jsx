@@ -48,6 +48,41 @@ export default function BackupSection({ onImported }) {
     }
   };
 
+  const doShare = async () => {
+    setBusy(true);
+    try {
+      const snap = await exportBackup();
+      const text = serializeBackup(snap);
+      const name = `teaching-companion-${toDateKey(new Date())}.json`;
+      const file = new File([text], name, { type: 'application/json' });
+      // Try Web Share API with files (mobile) — falls back to download on desktop
+      if (navigator.share) {
+        try {
+          if (navigator.canShare && navigator.canShare({ files: [file] })) {
+            await navigator.share({ files: [file], title: 'Teaching Companion backup', text: `Backup ${name}` });
+          } else {
+            await navigator.share({ title: 'Teaching Companion backup', text });
+          }
+          await markExported();
+          setLastMsg({ tone: 'ok', text: `Shared ${Object.values(snap.meta.counts).reduce((a, b) => a + b, 0)} rows.` });
+          return;
+        } catch (err) {
+          if (err?.name === 'AbortError') return; // user cancelled — not an error
+          // fall through to download
+        }
+      }
+      downloadFile(name, text, 'application/json');
+      await markExported();
+      setLastMsg({ tone: 'ok', text: `Exported ${Object.values(snap.meta.counts).reduce((a, b) => a + b, 0)} rows.` });
+    } catch (e) {
+      setLastMsg({ tone: 'err', text: e.message });
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const canShare = typeof navigator !== 'undefined' && !!navigator.share;
+
   const doImport = async (mode) => {
     const file = fileRef.current?.files?.[0];
     if (!file) return toast.error('Choose a backup .json file first.');
@@ -85,13 +120,24 @@ export default function BackupSection({ onImported }) {
         single JSON file you can email to yourself or keep in cloud storage.
       </p>
 
-      <button
-        onClick={doExport}
-        disabled={busy}
-        className="w-full py-3 rounded-xl bg-primary hover:bg-primary-hover text-on-primary text-sm font-medium disabled:opacity-40 mb-3"
-      >
-        ⬇ Export backup (.json)
-      </button>
+      <div className={`grid gap-2 mb-3 ${canShare ? 'grid-cols-2' : 'grid-cols-1'}`}>
+        <button
+          onClick={doExport}
+          disabled={busy}
+          className="py-3 rounded-xl bg-primary hover:bg-primary-hover text-on-primary text-sm font-medium disabled:opacity-40"
+        >
+          ⬇ Download (.json)
+        </button>
+        {canShare && (
+          <button
+            onClick={doShare}
+            disabled={busy}
+            className="py-3 rounded-xl border border-slate-300 bg-surface text-slate-700 text-sm font-medium hover:bg-slate-50 disabled:opacity-40"
+          >
+            ↗ Share backup
+          </button>
+        )}
+      </div>
 
       <input
         ref={fileRef}

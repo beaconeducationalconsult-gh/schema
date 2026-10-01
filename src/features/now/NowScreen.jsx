@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { Link } from 'react-router-dom';
 import { useNow } from '../../hooks/useNow';
 import {
   subjects as subjectRepo,
@@ -11,16 +10,14 @@ import {
 import { ensureNowLesson, loadNowContext } from '../../db/now';
 import { daysSinceExport } from '../../db/backup';
 import { db } from '../../db/schema';
+import { toast } from '../../lib/dialogs';
 import ResourceManagerModal from '../../components/ResourceManagerModal';
 import RoutineTemplateModal from '../../components/RoutineTemplateModal';
 import CompleteLessonModal from '../../components/CompleteLessonModal';
 import StatusBanner from './StatusBanner';
-import ClassCard from './ClassCard';
-import CurriculumCard, { NoStandardCard } from './CurriculumCard';
-import ActivityPromptBar from './ActivityPromptBar';
-import ActivityFeed from './ActivityFeed';
+import TodayHero from './TodayHero';
+import TeachingStepsCard from './TeachingStepsCard';
 import NotesStrip from './NotesStrip';
-import LessonActions from './LessonActions';
 import { ContextSkeleton, EmptyDay } from './NowStates';
 
 const EMPTY_LIST = [];
@@ -45,14 +42,26 @@ export default function NowScreen() {
   const [routineModalOpen, setRoutineModalOpen] = useState(false);
   const [completeModalOpen, setCompleteModalOpen] = useState(false);
 
-  // Live reads: anything changed here, on the Lesson screen, in Curriculum or
-  // by a backup restore is reflected without manual refreshes.
   const subjectsMap = useLiveQuery(
     async () => Object.fromEntries((await subjectRepo.all()).map(s => [s.id, s])),
     [],
     EMPTY_MAP
   );
   const backupAgeDays = useLiveQuery(daysSinceExport, [], null);
+
+  // Backup nudge as toast, not a persistent banner that pushes content down
+  useEffect(() => {
+    if (backupAgeDays == null || backupAgeDays <= 14) return;
+    const key = 'tc-backup-toast-date';
+    const today = toDateKey(new Date());
+    try {
+      if (localStorage.getItem(key) === today) return;
+      localStorage.setItem(key, today);
+    } catch {}
+    toast(`It's been ${backupAgeDays} days since your last backup.`, {
+      action: { label: 'Export now', onClick: () => { window.location.href = '/settings'; } },
+    });
+  }, [backupAgeDays]);
 
   const liveSlot = current || next;
   const fallbackSlot = slots[0] || allSlots[0] || null;
@@ -61,8 +70,6 @@ export default function NowScreen() {
     : liveSlot || fallbackSlot;
   const isPreviewMode = !!overrideSlotId || (!liveSlot && !!fallbackSlot);
 
-  // Creating today's lesson row is a write, so it lives in an effect — keyed by
-  // slot + date, and only ever sets state after the async work finishes.
   const slotId = activeSlot?.id ?? null;
   const dateKey = toDateKey(now);
   const lessonKey = slotId == null ? null : `${slotId}:${dateKey}`;
@@ -74,7 +81,6 @@ export default function NowScreen() {
       if (alive) setEnsured({ key: lessonKey, lessonId: lesson?.id ?? null });
     });
     return () => { alive = false; };
-    // `activeSlot`/`now` are captured for their values at the moment the key changes.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lessonKey]);
   const lessonId = ensured.key === lessonKey ? ensured.lessonId : null;
@@ -96,7 +102,6 @@ export default function NowScreen() {
     if (context.lesson) {
       await db.lessons.update(context.lesson.id, { standardId: stdId });
     }
-    // The live query above picks the change up on its own.
   };
 
   if (!activeSlot && allSlots.length === 0) {
@@ -120,78 +125,73 @@ export default function NowScreen() {
         onSelectSlot={(id) => setOverrideSlotId(id)}
       />
 
-      {backupAgeDays != null && backupAgeDays > 14 && (
-        <div className="max-w-3xl mx-auto px-4 pt-3">
-          <div className="text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2 flex items-center justify-between">
-            <span>It's been {backupAgeDays} days since your last backup.</span>
-            <Link to="/settings" className="underline font-medium">Export now</Link>
-          </div>
-        </div>
-      )}
-
       {loadingContext || !context ? (
         <ContextSkeleton />
       ) : (
         <>
-          <ClassCard
+          <TodayHero
             slot={context.slot}
             subject={context.subject}
             lesson={context.lesson}
+            strand={context.strand}
+            subStrand={context.subStrand}
+            standard={context.standard}
+            resources={stdResources}
+            allStandards={subjectStandards}
+            onSwitchStandard={handleSwitchStandard}
+            onManageMedia={() => setMediaModalOpen(true)}
             isPreviewMode={isPreviewMode}
-            onCompleteLesson={() => setCompleteModalOpen(true)}
           />
 
-          {context.standard ? (
-            <CurriculumCard
-              strand={context.strand}
-              subStrand={context.subStrand}
-              standard={context.standard}
-              allStandards={subjectStandards}
-              resources={stdResources}
-              onSwitchStandard={handleSwitchStandard}
-              onManageMedia={() => setMediaModalOpen(true)}
-            />
-          ) : (
-            <NoStandardCard subject={context.subject} />
-          )}
-
-          <ActivityPromptBar
+          <TeachingStepsCard
+            items={activityFeed}
             lessonId={context.lesson?.id}
             standard={context.standard}
             onOpenTemplates={() => setRoutineModalOpen(true)}
+            onToggleDone={async (act) => {
+              await activityRepo.update(act.id, { done: !act.done });
+            }}
           />
 
-          {activityFeed.length > 0 && (
-            <ActivityFeed
-              items={activityFeed}
-              lessonId={context.lesson?.id}
-              onToggleDone={async (act) => {
-                const nextDone = !act.done;
-                await activityRepo.update(act.id, { done: nextDone });
-              }}
-              onCompleteLesson={() => setCompleteModalOpen(true)}
-            />
-          )}
+          <NotesStrip lesson={context.lesson} notes={recentNotes} />
 
-          <NotesStrip
-            lesson={context.lesson}
-            notes={recentNotes}
-          />
-
+          {/* Sticky teach bar — one thumb zone for the core action */}
           {context.lesson && (
-            <LessonActions
-              lesson={context.lesson}
-              onCompleteLesson={() => setCompleteModalOpen(true)}
-            />
+            <div className="max-w-3xl mx-auto px-4 pt-3">
+              <div className="flex gap-2">
+                <a
+                  href={`/lesson/${context.lesson.id}?guided=1`}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    window.location.href = `/lesson/${context.lesson.id}?guided=1`;
+                  }}
+                  className="flex-1 py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm text-center shadow-sm min-h-[44px] flex items-center justify-center"
+                >
+                  ▶ Teach Now
+                </a>
+                <button
+                  onClick={() => setCompleteModalOpen(true)}
+                  className="flex-1 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-medium text-sm min-h-[44px]"
+                >
+                  ✓ Complete
+                </button>
+              </div>
+              <div className="text-xs text-slate-500 text-center mt-1.5">
+                {activityFeed.filter((a) => a.done).length}/{activityFeed.length} steps done · {activityFeed.reduce((s, a) => s + (a.duration || 0), 0)} min
+                {activityFeed.length > 0 && (
+                  <>
+                    {' '}
+                    · <a href={`/lesson/${context.lesson.id}`} className="text-blue-600 hover:underline">View plan</a>
+                  </>
+                )}
+              </div>
+            </div>
           )}
         </>
       )}
 
       {mediaModalOpen && context?.standard && (
-        <ResourceManagerModal
-          standard={context.standard}
-          onClose={() => setMediaModalOpen(false)}
-        />
+        <ResourceManagerModal standard={context.standard} onClose={() => setMediaModalOpen(false)} />
       )}
 
       {routineModalOpen && context?.lesson && (

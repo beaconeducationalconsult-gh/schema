@@ -13,9 +13,10 @@ import {
 import { useDisplay, setProjector } from '../lib/theme';
 
 // Four everyday destinations stay on the bar; the rest live under "More".
+// Phase 0: Week → Timetable (same route /schedule, clearer mental model)
 const PRIMARY = [
   { to: '/', label: 'Now', Icon: Timer },
-  { to: '/schedule', label: 'Week', Icon: CalendarDays },
+  { to: '/schedule', label: 'Timetable', Icon: CalendarDays },
   { to: '/curriculum', label: 'Curriculum', Icon: BookOpen },
   { to: '/notes', label: 'Notes', Icon: NotebookPen },
 ];
@@ -25,7 +26,7 @@ const MORE = [
 ];
 
 const tabClass = (active) =>
-  `relative pt-2.5 pb-2 text-center text-[11px] flex flex-col items-center gap-1 transition focus-visible:outline-none focus-visible:bg-slate-100 ${
+  `relative pt-3 pb-2.5 text-center text-xs flex flex-col items-center gap-1.5 transition focus-visible:outline-none focus-visible:bg-slate-100 min-h-[56px] justify-center ${
     active ? 'text-slate-900 font-semibold' : 'text-slate-500 hover:text-slate-800'
   }`;
 
@@ -96,7 +97,7 @@ export default function AppNav() {
                   <Link
                     to={m.to}
                     ref={i === 0 ? firstItemRef : undefined}
-                    className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-slate-700 hover:bg-slate-100 focus-visible:outline-none focus-visible:bg-slate-100"
+                    className="flex items-center gap-3 px-3 py-3 rounded-xl text-sm text-slate-700 hover:bg-slate-100 focus-visible:outline-none focus-visible:bg-slate-100 min-h-[44px]"
                   >
                     <m.Icon size={18} aria-hidden="true" />
                     {m.label}
@@ -109,12 +110,12 @@ export default function AppNav() {
                   role="switch"
                   aria-checked={projector}
                   onClick={() => setProjector(!projector)}
-                  className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-slate-700 hover:bg-slate-100 focus-visible:outline-none focus-visible:bg-slate-100"
+                  className="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-sm text-slate-700 hover:bg-slate-100 focus-visible:outline-none focus-visible:bg-slate-100 min-h-[44px]"
                 >
                   <Presentation size={18} aria-hidden="true" />
                   <span className="flex-1 text-left">Projector mode</span>
                   <span
-                    className={`text-[10px] font-semibold uppercase ${
+                    className={`text-xs font-semibold uppercase ${
                       projector ? 'text-emerald-700' : 'text-slate-400'
                     }`}
                   >

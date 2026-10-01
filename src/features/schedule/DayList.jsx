@@ -2,7 +2,7 @@ import React from 'react';
 import { toDateKey } from '../../db/helpers';
 import { hhmmToMin } from '../../lib/week';
 
-export default function DayList({ data, now, todayKey, editMode, onOpenSlot }) {
+export default function DayList({ data, now, todayKey, onOpenSlot, onEditSlot }) {
   const { days, dayNumbers, slotsByDay, subjects, lessons } = data;
   const nowMin = now.getHours() * 60 + now.getMinutes();
 
@@ -27,10 +27,10 @@ export default function DayList({ data, now, todayKey, editMode, onOpenSlot }) {
               }`}
             >
               <div>
-                <div className="text-[10px] uppercase tracking-wider opacity-70">
+                <div className="text-xs uppercase tracking-wider opacity-70">
                   {d.toLocaleDateString(undefined, { weekday: 'long' })}
                 </div>
-                <div className="font-semibold">
+                <div className="font-semibold text-sm">
                   {d.toLocaleDateString(undefined, { day: 'numeric', month: 'short' })}
                 </div>
               </div>
@@ -55,14 +55,12 @@ export default function DayList({ data, now, todayKey, editMode, onOpenSlot }) {
                   const past = isToday && nowMin >= hhmmToMin(slot.endTime);
 
                   return (
-                    <li key={slot.id}>
+                    <li key={slot.id} className="group relative flex items-center">
                       <button
                         onClick={() => onOpenSlot(slot, d)}
-                        className={`w-full text-left px-4 py-3 flex items-center gap-3 ${
-                          past && !editMode ? 'opacity-60' : ''
-                        }`}
+                        className={`flex-1 text-left px-4 py-3 flex items-center gap-3 min-h-[64px] ${past ? 'opacity-60' : ''}`}
                       >
-                        <div className="w-14 text-[11px] text-slate-500 font-mono">
+                        <div className="w-14 text-xs text-slate-500 font-mono">
                           {slot.startTime}
                           <div className="text-slate-300">{slot.endTime}</div>
                         </div>
@@ -79,16 +77,22 @@ export default function DayList({ data, now, todayKey, editMode, onOpenSlot }) {
                             {lesson ? ' · has lesson plan' : ''}
                           </div>
                         </div>
-                        {editMode ? (
-                          <span className="text-[10px] bg-amber-200 text-amber-900 px-2 py-0.5 rounded-full">
-                            Edit
-                          </span>
-                        ) : inProgress ? (
-                          <span className="text-[10px] bg-emerald-600 text-white px-2 py-0.5 rounded-full">
+                        {inProgress ? (
+                          <span className="text-xs bg-emerald-600 text-white px-2 py-0.5 rounded-full">
                             NOW
                           </span>
                         ) : null}
                         <span className="text-slate-300">›</span>
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onEditSlot?.(slot);
+                        }}
+                        aria-label="Edit slot"
+                        className="mr-2 w-8 h-8 rounded-full border border-slate-200 hover:bg-slate-50 flex items-center justify-center text-slate-500 opacity-0 group-hover:opacity-100 focus:opacity-100 transition shrink-0"
+                      >
+                        ⋯
                       </button>
                     </li>
                   );

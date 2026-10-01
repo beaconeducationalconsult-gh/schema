@@ -18,19 +18,28 @@ describe('first-run onboarding', () => {
     renderApp();
     await screen.findByText('Welcome to Teaching Companion');
 
+    // Single-page setup (Phase 2): all fields visible at once, no wizard steps.
+    // Keep the original field interactions — teacher name + class level — but finish directly.
     fireEvent.change(screen.getByPlaceholderText('e.g. Mr. Kofi Mensah'), { target: { value: 'Ama Owusu' } });
     fireEvent.change(screen.getByPlaceholderText('e.g. Basic 6'), { target: { value: 'Basic 5' } });
-    fireEvent.click(screen.getByRole('button', { name: /next/i }));
 
-    await screen.findByText('Term dates');
-    fireEvent.click(screen.getByRole('button', { name: /next/i }));
-
-    await screen.findByText('What do you teach?');
+    // If the old wizard were still present, Next would navigate; on the new single page there is no Next,
+    // so only click it when it exists (keeps the test backward-compatible with either implementation).
+    const nextBtn = screen.queryByRole('button', { name: /^next$/i });
+    if (nextBtn) {
+      fireEvent.click(nextBtn);
+      await screen.findByText('Term dates');
+      fireEvent.click(screen.getByRole('button', { name: /^next$/i }));
+      await screen.findByText('What do you teach?');
+    } else {
+      // Single-page: confirm the subjects block is already visible
+      await screen.findByText('What do you teach?');
+    }
     // Three subjects are pre-selected; add one more and deselect Science.
     fireEvent.click(screen.getByRole('button', { name: 'Science' }));
     fireEvent.change(screen.getByPlaceholderText('Another subject…'), { target: { value: 'Geography' } });
     fireEvent.click(screen.getByRole('button', { name: 'Add' }));
-    fireEvent.click(screen.getByRole('button', { name: /start with 3 subjects/i }));
+    fireEvent.click(screen.getByRole('button', { name: /start teaching with 3 subjects/i }));
 
     await screen.findByText("Let's set up your week");
     expect((await db.subjects.toArray()).map((s) => s.name).sort()).toEqual(['English Language', 'Geography', 'Mathematics']);

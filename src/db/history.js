@@ -1,4 +1,5 @@
 import { db } from './schema';
+import Fuse from 'fuse.js';
 
 /**
  * Query lessons with rich filters, then hydrate each with subject/standard/activities.
@@ -58,14 +59,43 @@ export async function queryLessons({
     });
   }
 
-  // --- Full-text search (post-hydration, matches standard + notes) ---
+  // --- Full-text search (post-hydration, fuzzy via Fuse, matches standard + notes + subject) ---
   if (search.trim()) {
-    const q = search.trim().toLowerCase();
-    return rows.filter(r =>
-      (r.standard?.indicator || '').toLowerCase().includes(q) ||
-      (r.standard?.contentStandard || '').toLowerCase().includes(q) ||
-      (r.subject?.name || '').toLowerCase().includes(q) ||
-      r.notes.some(n => (n.body || '').toLowerCase().includes(q))
+    const q = search.trim();
+    // Build a haystack per row for Fuse; keep original rows for fallback includes
+    const withHay = rows.map((r) => ({
+      ...r,
+      _hay: [
+        r.standard?.indicator || '',
+        r.standard?.contentStandard || '',
+        r.subject?.name || '',
+        r.lesson?.date || '',
+        ...r.notes.map((n) => n.body || ''),
+        ...r.activities.map((a) => `${a.title} ${a.content || ''}`),
+      ].join(' '),
+    }));
+    const fuse = new Fuse(withHay, {
+      keys: [{ name: '_hay', weight: 1 }],
+      threshold: 0.35,
+      ignoreLocation: true,
+      minMatchCharLength: 2,
+    });
+    const hits = fuse.search(q);
+    if (hits.length > 0) {
+      return hits.map((h) => {
+        const { _hay, ...rest } = h.item;
+        return rest;
+      });
+    }
+    // Fallback to simple includes if Fuse finds nothing (e.g., very short query)
+    const lower = q.toLowerCase();
+    return rows.filter(
+      (r) =>
+        (r.standard?.indicator || '').toLowerCase().includes(lower) ||
+        (r.standard?.contentStandard || '').toLowerCase().includes(lower) ||
+        (r.subject?.name || '').toLowerCase().includes(lower) ||
+        r.notes.some((n) => (n.body || '').toLowerCase().includes(lower)) ||
+        r.activities.some((a) => (a.title || '').toLowerCase().includes(lower))
     );
   }
 

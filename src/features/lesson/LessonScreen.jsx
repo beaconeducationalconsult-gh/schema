@@ -76,6 +76,7 @@ export default function LessonScreen() {
       <PrintHeader data={data} />
 
       <LessonToolbar
+        data={data}
         onRoutine={() => setRoutineOpen(true)}
         onAddActivity={() => setPickerOpen(true)}
         onComplete={() => setCompleteOpen(true)}
