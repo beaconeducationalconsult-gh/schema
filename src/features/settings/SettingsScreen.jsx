@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Link } from 'react-router-dom';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { getSettings, saveSettings, resetSettings } from '../../db/settings';
@@ -13,24 +13,12 @@ import StorageSection from './StorageSection';
 import AboutSection from './AboutSection';
 
 export default function SettingsScreen() {
-  // Stored values stay live (backup import, reset, other tabs…); edits are
-  // kept in a small draft of just the fields the teacher touched, and only
-  // those are written on save — so we never overwrite unrelated keys such as
-  // the last-backup timestamp or the per-subject "current standard" pointers.
-  const stored = useLiveQuery(getSettings, []);
-  const [draft, setDraft] = useState({});
-  const settings = stored ? { ...stored, ...draft } : null;
-  const dirty = Object.keys(draft).length > 0;
-
-  const update = (patch) => setDraft((d) => ({ ...d, ...patch }));
-
-  const save = async () => {
-    await saveSettings(draft);
-    setDraft({});
-    toast.success('Settings saved.');
-  };
-
+  const settings = useLiveQuery(getSettings, []);
   if (!settings) return <div className="p-6 text-slate-500">Loading…</div>;
+
+  const autoSave = (patch) => {
+    saveSettings(patch);
+  };
 
   return (
     <div className="min-h-screen bg-slate-50 pb-28">
@@ -40,32 +28,25 @@ export default function SettingsScreen() {
             ← Now
           </Link>
           <h1 className="text-lg font-bold">Settings & Backup</h1>
-          <button
-            onClick={save}
-            disabled={!dirty}
-            className="text-sm px-3 py-1.5 rounded-lg bg-primary text-on-primary disabled:opacity-40"
-          >
-            Save
-          </button>
+          <span className="text-xs text-emerald-700 font-medium bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200">
+            Auto-saved ✓
+          </span>
         </div>
       </header>
 
       <main className="max-w-3xl mx-auto px-4 pt-4 space-y-4">
-        <ProfileSection settings={settings} onChange={update} />
+        <div className="text-xs text-slate-500 text-center -mt-1">
+          Changes save automatically — no Save button needed
+        </div>
+        <ProfileSection settings={settings} onChange={autoSave} />
 
-        <TermsSection
-          terms={settings.terms}
-          onChange={(terms) => update({ terms })}
-        />
+        <TermsSection terms={settings.terms} onChange={(terms) => autoSave({ terms })} />
 
         <DisplaySection />
 
-        <PrefsSection
-          prefs={settings.prefs}
-          onChange={(prefs) => update({ prefs })}
-        />
+        <PrefsSection prefs={settings.prefs} onChange={(prefs) => autoSave({ prefs })} />
 
-        <BackupSection onImported={() => setDraft({})} />
+        <BackupSection onImported={() => {}} />
 
         <StorageSection />
 
@@ -80,22 +61,10 @@ export default function SettingsScreen() {
             if (!ok) return;
             await resetSettings();
             await resetToSeed();
-            setDraft({});
             toast.success('Reset complete.');
           }}
         />
       </main>
-
-      {dirty && (
-        <div className="fixed bottom-20 inset-x-0 flex justify-center print:hidden z-30">
-          <div className="bg-primary text-on-primary text-sm px-4 py-2 rounded-full shadow-lg flex items-center gap-3">
-            <span>Unsaved changes</span>
-            <button onClick={save} className="underline text-xs font-medium">
-              Save now
-            </button>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

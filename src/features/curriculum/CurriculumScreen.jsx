@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { subjects as subjectRepo, settings } from '../../db/helpers';
 import { subjectStats } from '../../db/curriculum';
@@ -84,6 +85,15 @@ export default function CurriculumScreen() {
       </header>
 
       <main className="max-w-3xl mx-auto px-4 pt-4">
+        {/* Library tabs — Standards | Notes (unified Library) */}
+        <div className="flex gap-1 bg-slate-100 rounded-xl p-1 mb-3 w-fit">
+          <span className="px-4 py-1.5 rounded-lg bg-surface shadow text-slate-900 text-xs font-medium">Standards</span>
+          <Link to="/notes" className="px-4 py-1.5 rounded-lg text-slate-500 hover:text-slate-700 text-xs font-medium flex items-center gap-1.5">
+            Notes
+            <span className="hidden sm:inline text-xs bg-slate-200 text-slate-600 px-1.5 py-0.5 rounded-full">Hub</span>
+          </Link>
+          <Link to="/history" className="hidden sm:flex px-4 py-1.5 rounded-lg text-slate-500 hover:text-slate-700 text-xs font-medium items-center">History</Link>
+        </div>
         {active ? (
           <>
             <div className="flex items-center justify-between mb-3 gap-2">

@@ -136,6 +136,12 @@ export default function NotesScreen() {
       </header>
 
       <main className="max-w-3xl mx-auto px-4 pt-4 space-y-4">
+        {/* Library tabs — mirror Curriculum's Library */}
+        <div className="flex gap-1 bg-slate-100 rounded-xl p-1 w-fit">
+          <Link to="/curriculum" className="px-4 py-1.5 rounded-lg text-slate-500 hover:text-slate-700 text-xs font-medium">Standards</Link>
+          <span className="px-4 py-1.5 rounded-lg bg-surface shadow text-slate-900 text-xs font-medium">Notes</span>
+          <Link to="/history" className="hidden sm:flex px-4 py-1.5 rounded-lg text-slate-500 hover:text-slate-700 text-xs font-medium items-center">History</Link>
+        </div>
         {/* Composer Card */}
         <section className="bg-surface rounded-2xl border border-slate-200 p-4 shadow-sm">
           <div className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">

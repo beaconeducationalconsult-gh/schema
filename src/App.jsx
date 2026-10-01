@@ -2,6 +2,7 @@ import React, { Suspense, lazy } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import NowScreen from './features/now/NowScreen';
 import AppNav from './components/AppNav';
+import AppHeader from './components/AppHeader';
 import DialogHost from './components/DialogHost';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { isOnboarded } from './db/settings';
@@ -45,6 +46,7 @@ export default function App() {
 
   return (
     <>
+      <AppHeader />
       <Suspense fallback={<RouteFallback />}>
         <Routes>
           <Route path="/" element={<NowScreen />} />

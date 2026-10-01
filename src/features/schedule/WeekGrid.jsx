@@ -2,7 +2,7 @@ import React from 'react';
 import { toDateKey } from '../../db/helpers';
 import { hhmmToMin } from '../../lib/week';
 
-export default function WeekGrid({ data, now, todayKey, editMode, onOpenSlot }) {
+export default function WeekGrid({ data, now, todayKey, onOpenSlot, onEditSlot }) {
   const { days, dayNumbers, slotsByDay, subjects, lessons } = data;
 
   const nowMin = now.getHours() * 60 + now.getMinutes();
@@ -24,7 +24,7 @@ export default function WeekGrid({ data, now, todayKey, editMode, onOpenSlot }) 
                 isToday ? 'bg-primary text-on-primary' : 'bg-surface text-slate-700'
               }`}
             >
-              <div className="text-[10px] uppercase tracking-wider opacity-70">
+              <div className="text-xs uppercase tracking-wider opacity-70">
                 {d.toLocaleDateString(undefined, { weekday: 'short' })}
               </div>
               <div className="text-lg font-semibold">{d.getDate()}</div>
@@ -47,7 +47,7 @@ export default function WeekGrid({ data, now, todayKey, editMode, onOpenSlot }) 
               }`}
             >
               {daySlots.length === 0 ? (
-                <div className="text-[11px] text-slate-400 text-center py-6">
+                <div className="text-xs text-slate-400 text-center py-6">
                   Free day
                 </div>
               ) : (
@@ -62,55 +62,63 @@ export default function WeekGrid({ data, now, todayKey, editMode, onOpenSlot }) 
                     isToday && nowMin >= hhmmToMin(slot.endTime);
 
                   return (
-                    <button
+                    <div
                       key={slot.id + key}
-                      onClick={() => onOpenSlot(slot, d)}
-                      className={`w-full text-left rounded-xl p-2.5 border transition relative ${
-                        editMode
-                          ? 'border-amber-300 bg-amber-50/40 hover:border-amber-400'
-                          : inProgress
-                            ? 'border-emerald-500 ring-2 ring-emerald-200 bg-surface'
-                            : past
-                              ? 'border-slate-100 bg-slate-50 opacity-75'
-                              : 'border-slate-200 bg-surface hover:border-slate-300'
+                      className={`relative w-full text-left rounded-xl p-2.5 border transition group ${
+                        inProgress
+                          ? 'border-emerald-500 ring-2 ring-emerald-200 bg-surface'
+                          : past
+                            ? 'border-slate-100 bg-slate-50 opacity-75'
+                            : 'border-slate-200 bg-surface hover:border-slate-300'
                       }`}
                     >
-                      <div className="flex items-center gap-2">
-                        <span
-                          className="w-1.5 h-6 rounded-full shrink-0"
-                          style={{ backgroundColor: subject?.color || '#94a3b8' }}
-                        />
-                        <div className="min-w-0 flex-1">
-                          <div className="text-[10px] text-slate-500 font-medium">
-                            {slot.startTime}–{slot.endTime}
-                          </div>
-                          <div className="text-xs font-semibold text-slate-800 truncate">
-                            {subject?.name || '—'}
+                      <button
+                        onClick={() => onOpenSlot(slot, d)}
+                        className="w-full text-left"
+                      >
+                        <div className="flex items-center gap-2 pr-6">
+                          <span
+                            className="w-1.5 h-6 rounded-full shrink-0"
+                            style={{ backgroundColor: subject?.color || '#94a3b8' }}
+                          />
+                          <div className="min-w-0 flex-1">
+                            <div className="text-xs text-slate-500 font-medium">
+                              {slot.startTime}–{slot.endTime}
+                            </div>
+                            <div className="text-xs font-semibold text-slate-800 truncate">
+                              {subject?.name || '—'}
+                            </div>
                           </div>
                         </div>
-                      </div>
 
-                      <div className="mt-1.5 flex items-center justify-between">
-                        <span className="text-[10px] text-slate-400 truncate">
-                          {slot.room || ''}
-                        </span>
-                        {editMode ? (
-                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-200 text-amber-900">
-                            edit
+                        <div className="mt-1.5 flex items-center justify-between">
+                          <span className="text-xs text-slate-400 truncate">
+                            {slot.room || ''}
                           </span>
-                        ) : lesson ? (
-                          <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-primary text-on-primary">
-                            lesson
-                          </span>
-                        ) : null}
-                      </div>
+                          {lesson ? (
+                            <span className="text-xs px-1.5 py-0.5 rounded-full bg-primary text-on-primary">
+                              lesson
+                            </span>
+                          ) : null}
+                        </div>
 
-                      {inProgress && !editMode && (
-                        <span className="absolute -top-1.5 -right-1.5 text-[9px] bg-emerald-600 text-white px-1.5 py-0.5 rounded-full">
-                          NOW
-                        </span>
-                      )}
-                    </button>
+                        {inProgress && (
+                          <span className="absolute -top-1.5 -right-1.5 text-[9px] bg-emerald-600 text-white px-1.5 py-0.5 rounded-full">
+                            NOW
+                          </span>
+                        )}
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onEditSlot?.(slot);
+                        }}
+                        aria-label="Edit slot"
+                        className="absolute top-1 right-1 w-6 h-6 rounded-full hover:bg-slate-100 flex items-center justify-center text-slate-400 hover:text-slate-600 opacity-0 group-hover:opacity-100 focus:opacity-100 transition"
+                      >
+                        ⋯
+                      </button>
+                    </div>
                   );
                 })
               )}

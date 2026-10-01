@@ -94,6 +94,11 @@ export default function HistoryScreen() {
       </header>
 
       <main className="max-w-3xl mx-auto px-4 pt-4 space-y-4">
+        <div className="flex gap-1 bg-slate-100 rounded-xl p-1 w-fit">
+          <Link to="/curriculum" className="px-4 py-1.5 rounded-lg text-slate-500 hover:text-slate-700 text-xs font-medium">Standards</Link>
+          <Link to="/notes" className="px-4 py-1.5 rounded-lg text-slate-500 hover:text-slate-700 text-xs font-medium">Notes</Link>
+          <span className="px-4 py-1.5 rounded-lg bg-surface shadow text-slate-900 text-xs font-medium">History</span>
+        </div>
         <Filters filters={filters} setFilters={setFilters} subjects={subjects} />
 
         {stats && <StatsBar stats={stats} />}
