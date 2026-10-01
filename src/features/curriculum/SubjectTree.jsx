@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
+import Fuse from 'fuse.js';
 import { db } from '../../db/schema';
 import {
   loadSubjectTree,
@@ -20,12 +21,6 @@ function matches(text, q) {
   return (text || '').toLowerCase().includes(q.toLowerCase());
 }
 
-function standardMatches(std, q) {
-  if (!q) return true;
-  const hay = [std.contentStandard, std.indicator, ...(std.exemplars || [])].join(' ').toLowerCase();
-  return hay.includes(q.toLowerCase());
-}
-
 export default function SubjectTree({ subject, currentStandardId, onSetCurrent, searchQuery = '' }) {
   // Live tree: edits, deletes, media changes and bulk imports all show up by themselves.
   const tree = useLiveQuery(() => loadSubjectTree(subject.id), [subject.id]);
@@ -38,6 +33,20 @@ export default function SubjectTree({ subject, currentStandardId, onSetCurrent, 
   const q = (searchQuery || '').trim();
   const isSearching = q.length > 0;
 
+  // Fuzzy index over standards (contentStandard + indicator + exemplars) — strand/subStrand names stay exact for predictability
+  const fuseIds = useMemo(() => {
+    if (!isSearching || !tree) return null;
+    const flat = tree.flatMap((st) => st.subStrands.flatMap((sub) => sub.standards));
+    if (flat.length === 0) return new Set();
+    const fuse = new Fuse(flat, {
+      keys: [{ name: 'contentStandard', weight: 0.5 }, { name: 'indicator', weight: 0.4 }, { name: 'exemplars', weight: 0.3 }],
+      threshold: 0.35,
+      ignoreLocation: true,
+      minMatchCharLength: 2,
+    });
+    return new Set(fuse.search(q).map((r) => r.item.id));
+  }, [tree, q, isSearching]);
+
   const filteredTree = useMemo(() => {
     if (!tree) return null;
     if (!isSearching) return tree;
@@ -47,18 +56,20 @@ export default function SubjectTree({ subject, currentStandardId, onSetCurrent, 
         const filteredSubs = strand.subStrands
           .map((sub) => {
             const subHit = matches(sub.name, q);
-            const filteredStds = sub.standards.filter((std) => standardMatches(std, q) || strandHit || subHit);
-            // If strand or sub hit, keep all standards under it; else only matching ones
-            const keep = strandHit || subHit ? sub.standards : filteredStds;
-            if (keep.length === 0 && !strandHit && !subHit) return null;
-            return { ...sub, standards: keep };
+            // strand/sub hit => keep all; else keep only fuse-matched standards
+            const keepAll = strandHit || subHit;
+            const filteredStds = keepAll
+              ? sub.standards
+              : sub.standards.filter((std) => (fuseIds ? fuseIds.has(std.id) : false));
+            if (filteredStds.length === 0 && !keepAll) return null;
+            return { ...sub, standards: filteredStds };
           })
           .filter(Boolean);
         if (filteredSubs.length === 0) return null;
         return { ...strand, subStrands: filteredSubs };
       })
       .filter(Boolean);
-  }, [tree, q, isSearching]);
+  }, [tree, q, isSearching, fuseIds]);
 
   const displayTree = filteredTree;
   const openStrand = isSearching

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { activityRepo } from '../../db/helpers';
 import { ACTIVITY_TYPES } from '../../db/schema';
@@ -29,6 +29,19 @@ export default function TeachingStepsCard({ items = [], lessonId, standard, onOp
     setDuration(null);
     setSheetOpen(true);
   };
+
+  useEffect(() => {
+    const h = () => {
+      const meta = ACTIVITY_META[ACTIVITY_TYPES[0]];
+      setSelectedType(ACTIVITY_TYPES[0]);
+      setTitle(meta.defaultTitle);
+      setDraft(standard?.exemplars?.[0] || '');
+      setDuration(null);
+      setSheetOpen(true);
+    };
+    window.addEventListener('tc-open-add-step', h);
+    return () => window.removeEventListener('tc-open-add-step', h);
+  }, [standard]);
 
   const selectType = (t) => {
     setSelectedType(t);
@@ -100,7 +113,7 @@ export default function TeachingStepsCard({ items = [], lessonId, standard, onOp
   };
 
   return (
-    <section className="max-w-3xl mx-auto px-4 pt-3">
+    <section id="teaching-steps" className="max-w-3xl mx-auto px-4 pt-3">
       <div className="bg-surface rounded-2xl shadow-sm border border-slate-200 p-5">
         <div className="flex items-center justify-between gap-2 mb-3">
           <div className="text-xs font-semibold text-slate-500 uppercase tracking-wide">

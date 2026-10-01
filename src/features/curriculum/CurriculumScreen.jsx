@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { subjects as subjectRepo, settings } from '../../db/helpers';
@@ -27,6 +27,12 @@ export default function CurriculumScreen() {
   const [editingSubject, setEditingSubject] = useState(null);
   const [bulkOpen, setBulkOpen] = useState(false);
   const [search, setSearch] = useState('');
+
+  useEffect(() => {
+    const h = () => setEditingSubject({ isNew: true });
+    window.addEventListener('tc-open-add-subject', h);
+    return () => window.removeEventListener('tc-open-add-subject', h);
+  }, []);
 
   const active = subjects.find(s => s.id === activeId) || null;
 

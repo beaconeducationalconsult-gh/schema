@@ -42,6 +42,12 @@ export default function WeekScreen() {
   const todayKey = toDateKey(now);
   const [editingSlot, setEditingSlot] = useState(null);
   const [planTab, setPlanTab] = useState('timetable'); // 'timetable' | 'lessons'
+
+  useEffect(() => {
+    const h = () => setEditingSlot({ isNew: true });
+    window.addEventListener('tc-open-add-slot', h);
+    return () => window.removeEventListener('tc-open-add-slot', h);
+  }, []);
   const [lessonSearch, setLessonSearch] = useState('');
 
   useEffect(() => {

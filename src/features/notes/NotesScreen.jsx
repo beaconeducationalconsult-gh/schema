@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { Link } from 'react-router-dom';
 import {
@@ -45,8 +45,15 @@ export default function NotesScreen() {
   const [search, setSearch] = useState('');
 
   // New note composer state
+  const composerRef = useRef(null);
   const [body, setBody] = useState('');
   const [selectedTags, setSelectedTags] = useState(['prep']);
+
+  useEffect(() => {
+    const h = () => composerRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }) || composerRef.current?.focus();
+    window.addEventListener('tc-open-add-note', h);
+    return () => window.removeEventListener('tc-open-add-note', h);
+  }, []);
   const [selectedStandardId, setSelectedStandardId] = useState('');
   const [editingId, setEditingId] = useState(null);
   const [editBody, setEditBody] = useState('');
@@ -148,6 +155,8 @@ export default function NotesScreen() {
             ✍️ Jot a New Note or Reflection
           </div>
           <textarea
+            ref={composerRef}
+            id="note-composer"
             rows={2}
             value={body}
             onChange={(e) => setBody(e.target.value)}

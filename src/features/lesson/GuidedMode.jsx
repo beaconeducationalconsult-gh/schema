@@ -23,6 +23,7 @@ export default function GuidedMode({ data, onExit }) {
   const { projector } = useDisplay();
 
   const current = activities[index];
+  const touchX = useRef(null);
 
   // Reset the timer whenever the step changes. Adjusting state while rendering
   // (instead of in an effect) avoids painting one frame with the old step's time.
@@ -115,28 +116,41 @@ export default function GuidedMode({ data, onExit }) {
     }
   };
 
+  // Swipe L/R on the card to move steps (Phase 2 polish)
+  const onTouchStart = (e) => {
+    touchX.current = e.touches[0].clientX;
+  };
+  const onTouchEnd = (e) => {
+    if (touchX.current == null) return;
+    const dx = e.changedTouches[0].clientX - touchX.current;
+    touchX.current = null;
+    if (Math.abs(dx) < 50) return;
+    if (dx < 0) next();
+    else prev();
+  };
+
   return (
     <div className="palette-fixed min-h-screen bg-primary text-on-primary flex flex-col">
-      {/* Top bar */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-white/10">
-        <button onClick={onExit} className="text-sm text-white/70 hover:text-white" aria-label="Exit guided mode">
+      {/* Top bar — persistent Exit + Projector */}
+      <div className="flex items-center justify-between px-3 py-2 border-b border-white/10 gap-2">
+        <button onClick={onExit} className="px-3 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-sm font-medium min-h-[40px]" aria-label="Exit guided mode">
           ✕ Exit
         </button>
-        <div className="text-center">
-          <div className="text-[10px] uppercase tracking-wider text-white/50">
+        <div className="text-center min-w-0 flex-1 px-2">
+          <div className="text-[10px] uppercase tracking-wider text-white/50 truncate">
             {subject?.name} · {standard?.indicator?.slice(0, 40) || ''}
           </div>
           <div className="text-sm font-medium">
             Step {index + 1} of {activities.length}
           </div>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-1.5 shrink-0">
           {resources.length > 0 && (
             <button
               onClick={() => setShowMedia(m => !m)}
-              className="text-xs px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-sky-300 font-medium"
+              className="text-xs px-3 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-sky-200 font-medium min-h-[40px]"
             >
-              🖼️ Media ({resources.length})
+              🖼️ {showMedia ? 'Hide' : 'Media'} ({resources.length})
             </button>
           )}
           <button
@@ -144,13 +158,13 @@ export default function GuidedMode({ data, onExit }) {
             aria-pressed={projector}
             title="Projector mode: larger text"
             aria-label="Toggle projector mode"
-            className={`p-1.5 rounded-lg ${projector ? 'bg-white/20 text-white' : 'text-white/60 hover:text-white'}`}
+            className={`w-10 h-10 rounded-xl flex items-center justify-center ${projector ? 'bg-white/90 text-slate-900' : 'bg-white/10 text-white/70 hover:text-white'}`}
           >
             <Presentation size={18} />
           </button>
           <button
             onClick={() => setShowPlan(s => !s)}
-            className="text-sm text-white/70 hover:text-white"
+            className={`px-3 py-2 rounded-xl text-sm font-medium min-h-[40px] ${showPlan ? 'bg-white/90 text-slate-900' : 'bg-white/10 text-white/70 hover:text-white'}`}
           >
             {showPlan ? 'Hide' : 'Plan'}
           </button>
@@ -193,8 +207,12 @@ export default function GuidedMode({ data, onExit }) {
         </div>
       )}
 
-      {/* Main card */}
-      <div className="flex-1 flex flex-col items-center justify-center px-6 py-6 overflow-y-auto">
+      {/* Main card — swipe L/R to navigate */}
+      <div
+        className="flex-1 flex flex-col items-center justify-center px-6 py-6 overflow-y-auto touch-pan-y"
+        onTouchStart={onTouchStart}
+        onTouchEnd={onTouchEnd}
+      >
         <div
           className={`w-16 h-16 rounded-2xl flex items-center justify-center text-3xl ${meta.color} mb-4`}
         >
@@ -270,29 +288,52 @@ export default function GuidedMode({ data, onExit }) {
         </div>
       </div>
 
-      {/* Bottom controls */}
+      {/* Step dots — tap to jump */}
+      <div className="flex items-center justify-center gap-1.5 py-2" role="tablist" aria-label="Steps">
+        {activities.map((a, i) => (
+          <button
+            key={a.id}
+            role="tab"
+            aria-selected={i === index}
+            aria-label={`Step ${i + 1}: ${a.title}`}
+            onClick={() => setIndex(i)}
+            className={`transition-all rounded-full ${
+              i === index
+                ? 'w-6 h-2 bg-white/90'
+                : a.done
+                  ? 'w-2 h-2 bg-emerald-400'
+                  : 'w-2 h-2 bg-white/30 hover:bg-white/50'
+            }`}
+          />
+        ))}
+      </div>
+
+      {/* Bottom controls — 48px thumb zone */}
       <div className="border-t border-white/10 px-4 py-3 flex items-center justify-between gap-2">
         <button
           onClick={prev}
           disabled={index === 0}
-          className="px-4 py-3 rounded-xl bg-white/10 text-sm disabled:opacity-30"
+          className="px-4 py-3.5 rounded-xl bg-white/10 text-sm min-h-[48px] disabled:opacity-30"
+          aria-label="Previous step"
         >
           ← Prev
         </button>
         <button
           onClick={markDone}
-          className="flex-1 px-4 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 font-medium"
+          className="flex-1 px-4 py-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 font-semibold text-base min-h-[48px] shadow-lg"
         >
           ✓ {index === activities.length - 1 ? 'Done & Wrap Up Lesson' : 'Done & Next'}
         </button>
         <button
           onClick={next}
           disabled={index === activities.length - 1}
-          className="px-4 py-3 rounded-xl bg-white/10 text-sm disabled:opacity-30"
+          className="px-4 py-3.5 rounded-xl bg-white/10 text-sm min-h-[48px] disabled:opacity-30"
+          aria-label="Next step"
         >
           Skip →
         </button>
       </div>
+      <div className="text-center text-[11px] text-white/30 pb-2 hidden sm:block">← → to move · swipe on card · space to start/pause timer</div>
 
       {completeOpen && (
         <CompleteLessonModal
